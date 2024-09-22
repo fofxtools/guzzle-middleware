@@ -1,6 +1,13 @@
 {
     "name": "fofx/guzzle-middleware",
     "description": "Enhanced Guzzle client with middleware, debugging, and proxy support.",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "fofx",
+            "email": "177870764+fofxtools@users.noreply.github.com"
+        }
+    ],
     "require": {
         "php": "^8.0",
         "guzzlehttp/guzzle": "^7.9",
@@ -9,7 +16,6 @@
     "require-dev": {
         "phpunit/phpunit": "^10.5"
     },
-    "license": "MIT",
     "autoload": {
         "psr-4": {
             "FOfX\\GuzzleMiddleware\\": "src/"
@@ -24,13 +30,7 @@
             "FOfX\\GuzzleMiddleware\\Tests\\Support\\": "tests/Support/"
         }
     },
-    "authors": [
-        {
-            "name": "fofx",
-            "email": "177870764+fofxtools@users.noreply.github.com"
-        }
-    ],
     "scripts": {
-        "test": "phpunit"
+        "test": "phpunit --colors=always"
     }
 }

@@ -218,4 +218,80 @@ class MiddlewareClientTest extends TestCase
         // Assert the response body matches the large body
         $this->assertEquals($largeBody, (string)$response->getBody());
     }
+
+    /**
+     * Test the printOutput function with default HTML escaping.
+     */
+    public function testPrintOutputWithEscaping()
+    {
+        $testOutput = [
+            [
+                'request' => [
+                    'method' => 'GET',
+                    'url' => 'http://example.com',
+                    'headers' => json_encode(['User-Agent' => 'Test Agent']),
+                    'body' => ''
+                ],
+                'response' => [
+                    'statusCode' => 200,
+                    'headers' => json_encode(['Content-Type' => 'text/html']),
+                    'body' => '<html><body>Test</body></html>',
+                    'contentLength' => 32
+                ],
+                'debug' => 'Debug information'
+            ]
+        ];
+
+        ob_start();
+        \FOfX\GuzzleMiddleware\printOutput($testOutput);
+        $output = ob_get_clean();
+
+        $this->assertStringContainsString('Request:', $output);
+        $this->assertStringContainsString('GET', $output);
+        $this->assertStringContainsString('http://example.com', $output);
+        $this->assertStringContainsString('Test Agent', $output);
+        $this->assertStringContainsString('Response:', $output);
+        $this->assertStringContainsString('200', $output);
+        $this->assertStringContainsString('text/html', $output);
+        $this->assertStringContainsString('&lt;html&gt;&lt;body&gt;Test&lt;/body&gt;&lt;/html&gt;', $output);
+        $this->assertStringContainsString('Debug information', $output);
+    }
+
+    /**
+     * Test the printOutput function without HTML escaping.
+     */
+    public function testPrintOutputWithoutEscaping()
+    {
+        $testOutput = [
+            [
+                'request' => [
+                    'method' => 'GET',
+                    'url' => 'http://example.com',
+                    'headers' => json_encode(['User-Agent' => 'Test Agent']),
+                    'body' => ''
+                ],
+                'response' => [
+                    'statusCode' => 200,
+                    'headers' => json_encode(['Content-Type' => 'text/html']),
+                    'body' => '<html><body>Test</body></html>',
+                    'contentLength' => 32
+                ],
+                'debug' => 'Debug information'
+            ]
+        ];
+
+        ob_start();
+        \FOfX\GuzzleMiddleware\printOutput($testOutput, true, 1000, false);
+        $output = ob_get_clean();
+
+        $this->assertStringContainsString('Request:', $output);
+        $this->assertStringContainsString('GET', $output);
+        $this->assertStringContainsString('http://example.com', $output);
+        $this->assertStringContainsString('Test Agent', $output);
+        $this->assertStringContainsString('Response:', $output);
+        $this->assertStringContainsString('200', $output);
+        $this->assertStringContainsString('text/html', $output);
+        $this->assertStringContainsString('<html><body>Test</body></html>', $output);
+        $this->assertStringContainsString('Debug information', $output);
+    }
 }

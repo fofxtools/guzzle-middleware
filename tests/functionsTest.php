@@ -132,6 +132,27 @@ class FunctionsTest extends TestCase
     }
 
     /**
+     * Test getMinimalUserAgent.
+     */
+    public function testGetMinimalUserAgent()
+    {
+        $userAgent = \FOfX\GuzzleMiddleware\getMinimalUserAgent();
+
+        // Check if the user agent string starts with "Guzzle ("
+        $this->assertStringStartsWith('Guzzle (', $userAgent);
+
+        // Check if the user agent string ends with a closing parenthesis
+        $this->assertStringEndsWith(')', $userAgent);
+
+        // Check if the user agent contains the OS and architecture information
+        $this->assertMatchesRegularExpression('/\((.*?;\s.*?)\)/', $userAgent);
+
+        // Verify that the user agent doesn't contain any newlines or extra spaces
+        $this->assertDoesNotMatchRegularExpression('/\s{2,}/', $userAgent);
+        $this->assertStringNotContainsString("\n", $userAgent);
+    }
+
+    /**
      * Test createGuzzleConfig with and without proxy.
      */
     public function testCreateGuzzleConfig()
@@ -152,12 +173,19 @@ class FunctionsTest extends TestCase
         $optionsWithRotation = \FOfX\GuzzleMiddleware\createGuzzleOptions(true);
 
         $this->assertArrayHasKey('headers', $optionsWithoutRotation);
-        $this->assertEquals('Mozilla/5.0 (X11; Linux x86_64)', $optionsWithoutRotation['headers']['User-Agent']);
+        $this->assertArrayHasKey('User-Agent', $optionsWithoutRotation['headers']);
+
+        // Check if the User-Agent follows the expected pattern
+        $this->assertMatchesRegularExpression('/^Guzzle \(.+\)$/', $optionsWithoutRotation['headers']['User-Agent']);
+
         $this->assertArrayHasKey('timeout', $optionsWithoutRotation);
         $this->assertEquals(10, $optionsWithoutRotation['timeout']);
 
         $this->assertArrayHasKey('headers', $optionsWithRotation);
         $this->assertArrayHasKey('User-Agent', $optionsWithRotation['headers']);
+
+        // For rotation, we can't predict the exact User-Agent, so we just check if it's a non-empty string
+        $this->assertNotEmpty($optionsWithRotation['headers']['User-Agent']);
     }
 
     /**
