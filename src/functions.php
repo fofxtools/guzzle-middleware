@@ -20,29 +20,27 @@
  * class to enhance Guzzle's functionality with additional logging, debugging,
  * and configuration capabilities. They provide flexibility in handling HTTP requests,
  * managing user agents, and processing request/response data.
- *
- * @package  FOfX\GuzzleMiddleware
  */
 
 declare(strict_types=1);
 
 namespace FOfX\GuzzleMiddleware;
 
-use FOfX\GuzzleMiddleware\MiddlewareClient;
 use Psr\Log\LoggerInterface;
 
 /**
  * Merges multiple arrays recursively. Values in latter arguments take precedence over values in earlier arguments.
  * Overwrites in case of associative keys. In case of numeric keys, it appends if the value is not already present.
- * 
- * Based on code in comments by martyniuk dot vasyl and mark dot roduner.
- * 
- * @link     https://stackoverflow.com/questions/1747507/merge-multiple-arrays-recursively
- * 
- * @param    array  ...$arrays  The set of arrays that will be merged. Later arrays take precedence.
- * @return   array              The merged array with distinct values.
  *
- * @example  
+ * Based on code in comments by martyniuk dot vasyl and mark dot roduner.
+ *
+ * @link     https://stackoverflow.com/questions/1747507/merge-multiple-arrays-recursively
+ *
+ * @param array ...$arrays The set of arrays that will be merged. Later arrays take precedence.
+ *
+ * @return array The merged array with distinct values.
+ *
+ * @example
  * $options1 = [
  *     'headers' => [
  *         'User-Agent' => 'Mozilla/5.0 (X11; Linux x86_64)',
@@ -51,7 +49,7 @@ use Psr\Log\LoggerInterface;
  *     'connect_timeout' => 10,
  *     'timeout' => 10
  * ];
- * 
+ *
  * $options2 = [
  *     'headers' => [
  *         'User-Agent' => 'Guzzle',
@@ -60,10 +58,10 @@ use Psr\Log\LoggerInterface;
  *     'connect_timeout' => 20,
  *     'timeout' => 20
  * ];
- * 
+ *
  * $merged = arrayMergeRecursiveDistinct($options1, $options2);
  * print_r($merged);
- * 
+ *
  * // Output:
  * Array
  * (
@@ -80,8 +78,7 @@ use Psr\Log\LoggerInterface;
  *     [connect_timeout] => 20
  *     [timeout] => 20
  * )
- * 
- * @example  
+ * @example
  * $options1 = [
  *     'headers' => [
  *         'User-Agent' => 'Mozilla/5.0 (X11; Linux x86_64)',
@@ -90,7 +87,7 @@ use Psr\Log\LoggerInterface;
  *     'connect_timeout' => 10,
  *     'timeout' => 10
  * ];
- * 
+ *
  * $options2 = [
  *     'headers' => [
  *         'User-Agent' => 'Guzzle',
@@ -99,12 +96,12 @@ use Psr\Log\LoggerInterface;
  *     'connect_timeout' => 20,
  *     'timeout' => 20
  * ];
- * 
+ *
  * $options3 = $options4 = $options5 = $options6 = [];
  * $arrays = [$options4, $options2, $options3, $options1, $options5, $options6];
  * $merged = arrayMergeRecursiveDistinct(...$arrays);
  * print_r($merged);
- * 
+ *
  * // Output:
  * Array
  * (
@@ -170,11 +167,11 @@ function arrayMergeRecursiveDistinct(array ...$arrays): array
  * - macOS:   "Guzzle (Macintosh; x86_64 Mac OS X)"
  * - Windows: "Guzzle (Windows NT 10.0; AMD64)"
  *
- * @return  string    The generated user agent string.
+ * @return string The generated user agent string.
  */
 function getMinimalUserAgent(): string
 {
-    $os = php_uname('s');
+    $os           = php_uname('s');
     $architecture = php_uname('m');
 
     switch (true) {
@@ -183,7 +180,7 @@ function getMinimalUserAgent(): string
         case stripos($os, 'Darwin') !== false:
             return "Guzzle (Macintosh; {$architecture} Mac OS X)";
         case stripos($os, 'Windows') !== false:
-            return "Guzzle (Windows NT " . php_uname('r') . "; {$architecture})";
+            return 'Guzzle (Windows NT ' . php_uname('r') . "; {$architecture})";
         default:
             return "Guzzle ({$os}; {$architecture})";
     }
@@ -192,8 +189,9 @@ function getMinimalUserAgent(): string
 /**
  * Create default Guzzle configuration settings.
  *
- * @param   string|null  $proxy  Proxy configuration
- * @return  array                Configuration array
+ * @param string|null $proxy Proxy configuration
+ *
+ * @return array Configuration array
  */
 function createGuzzleConfig(?string $proxy = null): array
 {
@@ -203,8 +201,9 @@ function createGuzzleConfig(?string $proxy = null): array
 /**
  * Create default Guzzle option settings, including user-agent rotation.
  *
- * @param   bool   $rotateUserAgent  Whether to rotate user agents
- * @return  array                    Options array
+ * @param bool $rotateUserAgent Whether to rotate user agents
+ *
+ * @return array Options array
  */
 function createGuzzleOptions(bool $rotateUserAgent = false): array
 {
@@ -222,31 +221,31 @@ function createGuzzleOptions(bool $rotateUserAgent = false): array
         // Chrome on Android
         'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Mobile Safari/537.36',
         // Safari on iOS
-        'Mozilla/5.0 (iPhone; CPU iPhone OS 16_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.5 Mobile/15E148 Safari/604.1'
+        'Mozilla/5.0 (iPhone; CPU iPhone OS 16_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.5 Mobile/15E148 Safari/604.1',
     ];
 
     $defaultUserAgent = getMinimalUserAgent();
 
     return [
         'headers' => [
-            'User-Agent' => $rotateUserAgent ? $userAgents[array_rand($userAgents)] : $defaultUserAgent,
+            'User-Agent'      => $rotateUserAgent ? $userAgents[array_rand($userAgents)] : $defaultUserAgent,
             'Accept-Language' => 'en-US,en;q=1.0',
-            'Connection' => 'keep-alive',
-            'Cache-Control' => 'no-cache',
+            'Connection'      => 'keep-alive',
+            'Cache-Control'   => 'no-cache',
         ],
         'connect_timeout' => 5,
-        'timeout' => 10,
+        'timeout'         => 10,
     ];
 }
 
 /**
  * Helper function to print the output from MiddlewareClient or makeMiddlewareRequest
  *
- * @param  array   $output     The output array
- * @param  bool    $truncate   Whether to truncate long outputs (default: true)
- * @param  int     $maxLength  Maximum length of truncation (default: 1000)
- * @param  bool    $escape     Whether to apply htmlspecialchars to sanitize output (default: true)
- * @param  string  $divider    The divider string to separate sections (default: 50 dashes if null)
+ * @param array  $output    The output array
+ * @param bool   $truncate  Whether to truncate long outputs (default: true)
+ * @param int    $maxLength Maximum length of truncation (default: 1000)
+ * @param bool   $escape    Whether to apply htmlspecialchars to sanitize output (default: true)
+ * @param string $divider   The divider string to separate sections (default: 50 dashes if null)
  */
 function printOutput(
     array $output,
@@ -260,7 +259,7 @@ function printOutput(
         $divider = str_repeat('-', 50);
     }
 
-    $outputString = '';
+    $outputString      = '';
     $totalTransactions = count($output);
     // Track the current transaction index
     $currentIndex = 0;
@@ -271,7 +270,7 @@ function printOutput(
         // Set a fallback value for missing keys
         $fallback = '(N/A)';
 
-        $outputString .= "Request:" . PHP_EOL;
+        $outputString .= 'Request:' . PHP_EOL;
         $outputString .= $divider . PHP_EOL;
 
         // Check if 'request' key exists and has 'method'
@@ -293,7 +292,7 @@ function printOutput(
         // Format and append request headers if present
         if (!empty($transaction['request']['headers'])) {
             $requestHeaders = json_decode($transaction['request']['headers'], true);
-            $outputString .= "  Headers:" . PHP_EOL;
+            $outputString .= '  Headers:' . PHP_EOL;
             $outputString .= $divider . PHP_EOL;
             $outputString .= json_encode($requestHeaders, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . PHP_EOL;
         }
@@ -305,13 +304,13 @@ function printOutput(
             if ($truncate && strlen($requestBody) > $maxLength) {
                 $requestBody = substr($requestBody, 0, $maxLength) . '... [TRUNCATED]';
             }
-            $outputString .= "  Body:" . PHP_EOL;
+            $outputString .= '  Body:' . PHP_EOL;
             $outputString .= $divider . PHP_EOL;
             $outputString .= $requestBody . PHP_EOL;
         }
         $outputString .= $divider . PHP_EOL;
 
-        $outputString .= "Response:" . PHP_EOL;
+        $outputString .= 'Response:' . PHP_EOL;
         $outputString .= $divider . PHP_EOL;
 
         // Check if 'response' key exists and has 'statusCode'
@@ -326,7 +325,7 @@ function printOutput(
         // Format and append response headers if present
         if (!empty($transaction['response']['headers'])) {
             $responseHeaders = json_decode($transaction['response']['headers'], true);
-            $outputString .= "  Headers:" . PHP_EOL;
+            $outputString .= '  Headers:' . PHP_EOL;
             $outputString .= $divider . PHP_EOL;
             $outputString .= json_encode($responseHeaders, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . PHP_EOL;
         }
@@ -338,7 +337,7 @@ function printOutput(
             if ($truncate && strlen($responseBody) > $maxLength) {
                 $responseBody = substr($responseBody, 0, $maxLength) . '... [TRUNCATED]';
             }
-            $outputString .= "  Body:" . PHP_EOL;
+            $outputString .= '  Body:' . PHP_EOL;
             $outputString .= $divider . PHP_EOL;
             $outputString .= $responseBody . PHP_EOL;
         }
@@ -350,7 +349,7 @@ function printOutput(
             if ($truncate && strlen($debugInfo) > $maxLength) {
                 $debugInfo = substr($debugInfo, 0, $maxLength) . '... [TRUNCATED]';
             }
-            $outputString .= "Debug Info:" . PHP_EOL;
+            $outputString .= 'Debug Info:' . PHP_EOL;
             $outputString .= $divider . PHP_EOL;
             $outputString .= $debugInfo . PHP_EOL;
             $outputString .= $divider . PHP_EOL;
@@ -373,26 +372,28 @@ function printOutput(
 
 /**
  * Make a request using the MiddlewareClient.
- * 
- * Note on the logger parameter: In PHP, when an object (like a LoggerInterface 
- * implementation) is passed to a function, the function receives a copy of the 
- * object handle, not a copy of the object itself. This means that while the 
- * function can't reassign the caller's original variable, it can interact with 
+ *
+ * Note on the logger parameter: In PHP, when an object (like a LoggerInterface
+ * implementation) is passed to a function, the function receives a copy of the
+ * object handle, not a copy of the object itself. This means that while the
+ * function can't reassign the caller's original variable, it can interact with
  * the object the handle points to.
- * 
+ *
  * As a result, any logging operations performed by this function or the underlying
  * MiddlewareClient will be reflected in the original logger object,
  * potentially adding new log entries to it.
  *
- * @param   string                                 $method           HTTP method
- * @param   string                                 $uri              URI for the request
- * @param   array                                  $config           Guzzle configuration
- * @param   array                                  $options          Request options
- * @param   ?LoggerInterface                       $logger           Logger instance
- * @param   bool                                   $rotateUserAgent  Whether to rotate user agents
- * @return  array                                                    Formatted output of the request
+ * @param string           $method          HTTP method
+ * @param string           $uri             URI for the request
+ * @param array            $config          Guzzle configuration
+ * @param array            $options         Request options
+ * @param ?LoggerInterface $logger          Logger instance
+ * @param bool             $rotateUserAgent Whether to rotate user agents
  *
- * @throws  \GuzzleHttp\Exception\GuzzleException
+ * @throws \GuzzleHttp\Exception\GuzzleException
+ *
+ * @return array Formatted output of the request
+ *
  * @see     arrayMergeRecursiveDistinct
  * @see     createGuzzleConfig
  * @see     createGuzzleOptions
@@ -405,10 +406,11 @@ function makeMiddlewareRequest(
     ?LoggerInterface $logger = null,
     bool $rotateUserAgent = false
 ): array {
-    $config = arrayMergeRecursiveDistinct(createGuzzleConfig(), $config);
+    $config  = arrayMergeRecursiveDistinct(createGuzzleConfig(), $config);
     $options = arrayMergeRecursiveDistinct(createGuzzleOptions($rotateUserAgent), $options);
 
     $client = new MiddlewareClient($config, $logger);
     $client->makeRequest($method, $uri, $options);
+
     return $client->getOutput();
 }

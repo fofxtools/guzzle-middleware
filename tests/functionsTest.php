@@ -20,9 +20,9 @@ class FunctionsTest extends TestCase
 
     protected function setUp(): void
     {
-        $this->mockHandler = new MockHandler();
+        $this->mockHandler  = new MockHandler();
         $this->handlerStack = HandlerStack::create($this->mockHandler);
-        $this->testLogger = new TestLogger();
+        $this->testLogger   = new TestLogger();
     }
 
     public function testConstructor()
@@ -157,7 +157,7 @@ class FunctionsTest extends TestCase
      */
     public function testCreateGuzzleConfig()
     {
-        $configWithProxy = \FOfX\GuzzleMiddleware\createGuzzleConfig('http://proxy.example.com');
+        $configWithProxy    = \FOfX\GuzzleMiddleware\createGuzzleConfig('http://proxy.example.com');
         $configWithoutProxy = \FOfX\GuzzleMiddleware\createGuzzleConfig();
 
         $this->assertEquals(['proxy' => 'http://proxy.example.com'], $configWithProxy);
@@ -170,7 +170,7 @@ class FunctionsTest extends TestCase
     public function testCreateGuzzleOptions()
     {
         $optionsWithoutRotation = \FOfX\GuzzleMiddleware\createGuzzleOptions(false);
-        $optionsWithRotation = \FOfX\GuzzleMiddleware\createGuzzleOptions(true);
+        $optionsWithRotation    = \FOfX\GuzzleMiddleware\createGuzzleOptions(true);
 
         $this->assertArrayHasKey('headers', $optionsWithoutRotation);
         $this->assertArrayHasKey('User-Agent', $optionsWithoutRotation['headers']);
@@ -194,12 +194,12 @@ class FunctionsTest extends TestCase
     public function testMakeMiddlewareRequest()
     {
         $mockHandler = new \GuzzleHttp\Handler\MockHandler([
-            new \GuzzleHttp\Psr7\Response(200, ['X-Foo' => 'Bar'], 'Hello, World')
+            new \GuzzleHttp\Psr7\Response(200, ['X-Foo' => 'Bar'], 'Hello, World'),
         ]);
         $handlerStack = \GuzzleHttp\HandlerStack::create($mockHandler);
-        $logger = new \Psr\Log\NullLogger();
-        $config = ['handler' => $handlerStack];
-        $options = [];
+        $logger       = new \Psr\Log\NullLogger();
+        $config       = ['handler' => $handlerStack];
+        $options      = [];
 
         $output = \FOfX\GuzzleMiddleware\makeMiddlewareRequest('GET', 'http://example.com', $config, $options, $logger, false);
 
@@ -348,7 +348,7 @@ class FunctionsTest extends TestCase
         // Append a mock response
         $this->mockHandler->append(new Response(200, ['X-Foo' => ['Bar']], 'Response body'));
 
-        $config = ['timeout' => 10, 'handler' => $this->handlerStack];
+        $config  = ['timeout' => 10, 'handler' => $this->handlerStack];
         $options = ['headers' => ['User-Agent' => 'TestAgent']];
 
         $output = \FOfX\GuzzleMiddleware\makeMiddlewareRequest('GET', 'http://example.com', $config, $options);
@@ -392,19 +392,19 @@ class FunctionsTest extends TestCase
         $testOutput = [
             [
                 'request' => [
-                    'method' => 'GET',
-                    'url' => 'http://example.com',
+                    'method'  => 'GET',
+                    'url'     => 'http://example.com',
                     'headers' => json_encode(['User-Agent' => 'Test Agent']),
-                    'body' => ''
+                    'body'    => '',
                 ],
                 'response' => [
-                    'statusCode' => 200,
-                    'headers' => json_encode(['Content-Type' => 'text/html']),
-                    'body' => '<html><body>Test</body></html>',
-                    'contentLength' => 32
+                    'statusCode'    => 200,
+                    'headers'       => json_encode(['Content-Type' => 'text/html']),
+                    'body'          => '<html><body>Test</body></html>',
+                    'contentLength' => 32,
                 ],
-                'debug' => 'Debug information'
-            ]
+                'debug' => 'Debug information',
+            ],
         ];
 
         ob_start();
@@ -430,19 +430,19 @@ class FunctionsTest extends TestCase
         $testOutput = [
             [
                 'request' => [
-                    'method' => 'GET',
-                    'url' => 'http://example.com',
+                    'method'  => 'GET',
+                    'url'     => 'http://example.com',
                     'headers' => json_encode(['User-Agent' => 'Test Agent']),
-                    'body' => ''
+                    'body'    => '',
                 ],
                 'response' => [
-                    'statusCode' => 200,
-                    'headers' => json_encode(['Content-Type' => 'text/html']),
-                    'body' => '<html><body>Test</body></html>',
-                    'contentLength' => 32
+                    'statusCode'    => 200,
+                    'headers'       => json_encode(['Content-Type' => 'text/html']),
+                    'body'          => '<html><body>Test</body></html>',
+                    'contentLength' => 32,
                 ],
-                'debug' => 'Debug information'
-            ]
+                'debug' => 'Debug information',
+            ],
         ];
 
         ob_start();
@@ -465,13 +465,13 @@ class FunctionsTest extends TestCase
      */
     public function testPrintOutputWithTruncation()
     {
-        $longBody = str_repeat('a', 2000);
+        $longBody   = str_repeat('a', 2000);
         $testOutput = [
             [
                 'response' => [
                     'body' => $longBody,
                 ],
-            ]
+            ],
         ];
 
         ob_start();
@@ -488,13 +488,13 @@ class FunctionsTest extends TestCase
      */
     public function testPrintOutputWithoutTruncation()
     {
-        $longBody = str_repeat('a', 2000);
+        $longBody   = str_repeat('a', 2000);
         $testOutput = [
             [
                 'response' => [
                     'body' => $longBody,
                 ],
-            ]
+            ],
         ];
 
         ob_start();
@@ -510,13 +510,13 @@ class FunctionsTest extends TestCase
      */
     public function testPrintOutputWithCustomMaxLength()
     {
-        $longBody = str_repeat('a', 2000);
+        $longBody   = str_repeat('a', 2000);
         $testOutput = [
             [
                 'response' => [
                     'body' => $longBody,
                 ],
-            ]
+            ],
         ];
 
         ob_start();
@@ -537,13 +537,13 @@ class FunctionsTest extends TestCase
             [
                 'request' => [
                     'method' => 'GET',
-                    'url' => 'http://example.com',
+                    'url'    => 'http://example.com',
                 ],
                 'response' => [
                     'statusCode' => 200,
-                    'body' => 'Test body',
+                    'body'       => 'Test body',
                 ],
-            ]
+            ],
         ];
 
         $customDivider = '****';

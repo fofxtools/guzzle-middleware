@@ -20,9 +20,9 @@ class MiddlewareClientTest extends TestCase
 
     protected function setUp(): void
     {
-        $this->mockHandler = new MockHandler();
+        $this->mockHandler  = new MockHandler();
         $this->handlerStack = HandlerStack::create($this->mockHandler);
-        $this->testLogger = new TestLogger();
+        $this->testLogger   = new TestLogger();
     }
 
     public function testConstructor()
@@ -36,7 +36,7 @@ class MiddlewareClientTest extends TestCase
         $this->mockHandler->append(new Response(200, ['X-Foo' => 'Bar'], 'Hello, World'));
         $client = new MiddlewareClient(['handler' => $this->handlerStack], $this->testLogger);
 
-        $request = new Request('GET', 'http://example.com');
+        $request  = new Request('GET', 'http://example.com');
         $response = $client->send($request);
 
         $this->assertEquals(200, $response->getStatusCode());
@@ -48,11 +48,12 @@ class MiddlewareClientTest extends TestCase
     {
         $this->mockHandler->append(function (RequestInterface $request) {
             $this->assertEquals('test-value', $request->getHeaderLine('X-Test-Header'));
+
             return new Response(200);
         });
 
-        $client = new MiddlewareClient(['handler' => $this->handlerStack], $this->testLogger);
-        $request = new Request('GET', 'http://example.com');
+        $client   = new MiddlewareClient(['handler' => $this->handlerStack], $this->testLogger);
+        $request  = new Request('GET', 'http://example.com');
         $response = $client->send($request, ['headers' => ['X-Test-Header' => 'test-value']]);
 
         $this->assertEquals(200, $response->getStatusCode());
@@ -74,10 +75,10 @@ class MiddlewareClientTest extends TestCase
     public function testMakeRequestSuccess()
     {
         $mock = new MockHandler([
-            new Response(200, ['X-Foo' => 'Bar'], 'Hello, World')
+            new Response(200, ['X-Foo' => 'Bar'], 'Hello, World'),
         ]);
         $handlerStack = HandlerStack::create($mock);
-        $client = new MiddlewareClient(['handler' => $handlerStack], $this->testLogger);
+        $client       = new MiddlewareClient(['handler' => $handlerStack], $this->testLogger);
 
         $response = $client->makeRequest('GET', 'http://example.com');
 
@@ -90,6 +91,7 @@ class MiddlewareClientTest extends TestCase
     {
         $this->mockHandler->append(function ($request) {
             $this->assertEquals('test-value', $request->getHeaderLine('X-Test-Header'));
+
             return new Response(200);
         });
 
@@ -101,8 +103,8 @@ class MiddlewareClientTest extends TestCase
     {
         $this->mockHandler->append(new Response(200, [], 'Response Body'));
 
-        $client = new MiddlewareClient(['handler' => $this->handlerStack], $this->testLogger);
-        $request = new Request('POST', 'http://example.com', ['Content-Type' => 'application/json'], '{"key":"value"}');
+        $client   = new MiddlewareClient(['handler' => $this->handlerStack], $this->testLogger);
+        $request  = new Request('POST', 'http://example.com', ['Content-Type' => 'application/json'], '{"key":"value"}');
         $response = $client->send($request);
 
         $this->assertEquals(200, $response->getStatusCode());
@@ -113,7 +115,7 @@ class MiddlewareClientTest extends TestCase
     {
         $this->mockHandler->append(new Response(500, [], 'Server Error'));
 
-        $client = new MiddlewareClient(['handler' => $this->handlerStack], $this->testLogger);
+        $client   = new MiddlewareClient(['handler' => $this->handlerStack], $this->testLogger);
         $response = $client->makeRequest('GET', 'http://example.com');
 
         $this->assertEquals(500, $response->getStatusCode());
@@ -135,7 +137,7 @@ class MiddlewareClientTest extends TestCase
     {
         $this->mockHandler->append(new RequestException('Network Error', new Request('GET', 'http://example.com')));
 
-        $client = new MiddlewareClient(['handler' => $this->handlerStack], $this->testLogger);
+        $client   = new MiddlewareClient(['handler' => $this->handlerStack], $this->testLogger);
         $response = $client->makeRequest('GET', 'http://example.com');
 
         $this->assertEquals(408, $response->getStatusCode());
@@ -176,13 +178,13 @@ class MiddlewareClientTest extends TestCase
     public function testProxyConfiguration()
     {
         $proxyUrl = 'http://proxy.example.com:8080';
-        $client = new MiddlewareClient(['proxy' => $proxyUrl], $this->testLogger);
+        $client   = new MiddlewareClient(['proxy' => $proxyUrl], $this->testLogger);
 
         $mock = new MockHandler([
-            new Response(200, ['X-Proxy-Used' => 'true'])
+            new Response(200, ['X-Proxy-Used' => 'true']),
         ]);
         $handlerStack = HandlerStack::create($mock);
-        $client = new MiddlewareClient(['handler' => $handlerStack, 'proxy' => $proxyUrl], $this->testLogger);
+        $client       = new MiddlewareClient(['handler' => $handlerStack, 'proxy' => $proxyUrl], $this->testLogger);
 
         $response = $client->makeRequest('GET', 'http://example.com');
         $this->assertEquals('true', $response->getHeaderLine('X-Proxy-Used'));
@@ -194,12 +196,13 @@ class MiddlewareClientTest extends TestCase
             function ($request, $options) {
                 // Simulate debug output
                 $debugStream = $options['debug'];
-                fwrite($debugStream, "Debug information");
+                fwrite($debugStream, 'Debug information');
+
                 return new Response(200);
             },
         ]);
         $handlerStack = HandlerStack::create($mock);
-        $client = new MiddlewareClient(['handler' => $handlerStack], $this->testLogger);
+        $client       = new MiddlewareClient(['handler' => $handlerStack], $this->testLogger);
         $client->makeRequest('GET', 'http://example.com');
         $output = $client->getOutput();
 
@@ -228,7 +231,7 @@ class MiddlewareClientTest extends TestCase
     {
         $this->mockHandler->append(new RequestException('Error without response', new Request('GET', 'http://example.com')));
 
-        $client = new MiddlewareClient(['handler' => $this->handlerStack], $this->testLogger);
+        $client   = new MiddlewareClient(['handler' => $this->handlerStack], $this->testLogger);
         $response = $client->makeRequest('GET', 'http://example.com');
 
         $this->assertEquals(408, $response->getStatusCode());
@@ -248,7 +251,7 @@ class MiddlewareClientTest extends TestCase
         $largeBody = str_repeat('LargePayload', 10000);
         $this->mockHandler->append(new Response(200, [], $largeBody));  // Set the large body in the mock response
 
-        $client = new MiddlewareClient(['handler' => $this->handlerStack], $this->testLogger);
+        $client   = new MiddlewareClient(['handler' => $this->handlerStack], $this->testLogger);
         $response = $client->makeRequest('POST', 'http://example.com', ['body' => $largeBody]);
 
         $this->assertEquals(200, $response->getStatusCode());

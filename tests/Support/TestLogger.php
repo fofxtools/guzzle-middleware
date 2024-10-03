@@ -16,8 +16,6 @@
  *
  * This logger is not intended for production use, but rather as a tool for
  * developers to ensure proper logging functionality in their tests.
- *
- * @package  FOfX\GuzzleMiddleware\Tests\Support
  */
 
 namespace FOfX\GuzzleMiddleware\Tests\Support;
@@ -76,24 +74,25 @@ class TestLogger implements LoggerInterface
     /**
      * Logs with an arbitrary level.
      *
-     * @param  mixed   $level    The log level.
-     * @param  string  $message  The log message.
-     * @param  array   $context  The context array.
+     * @param mixed  $level   The log level.
+     * @param string $message The log message.
+     * @param array  $context The context array.
      */
     public function log($level, string|\Stringable $message, array $context = []): void
     {
         $this->logs[] = [
-            'level' => $level,
+            'level'   => $level,
             'message' => $message instanceof \Stringable ? $message->__toString() : $message,
-            'context' => $context
+            'context' => $context,
         ];
     }
 
     /**
      * Check if a specific message has been logged.
      *
-     * @param   string  $message  The message to look for.
-     * @return  bool              True if the message is found, otherwise false.
+     * @param string $message The message to look for.
+     *
+     * @return bool True if the message is found, otherwise false.
      */
     public function hasLog(string $message): bool
     {
@@ -102,13 +101,14 @@ class TestLogger implements LoggerInterface
                 return true;
             }
         }
+
         return false;
     }
 
     /**
      * Get all the logged messages.
      *
-     * @return  array    The array of logged messages.
+     * @return array The array of logged messages.
      */
     public function getLogs(): array
     {
