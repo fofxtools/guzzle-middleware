@@ -9,6 +9,7 @@ use GuzzleHttp\HandlerStack;
 use GuzzleHttp\Psr7\Response;
 use GuzzleHttp\Psr7\Request;
 use GuzzleHttp\Exception\RequestException;
+use Psr\Http\Message\RequestInterface;
 use FOfX\GuzzleMiddleware\Tests\Support\TestLogger;
 
 class MiddlewareClientTest extends TestCase
@@ -28,6 +29,46 @@ class MiddlewareClientTest extends TestCase
     {
         $client = new MiddlewareClient([], $this->testLogger);
         $this->assertInstanceOf(MiddlewareClient::class, $client);
+    }
+
+    public function testSendMethodReturnsResponse()
+    {
+        $this->mockHandler->append(new Response(200, ['X-Foo' => 'Bar'], 'Hello, World'));
+        $client = new MiddlewareClient(['handler' => $this->handlerStack], $this->testLogger);
+
+        $request = new Request('GET', 'http://example.com');
+        $response = $client->send($request);
+
+        $this->assertEquals(200, $response->getStatusCode());
+        $this->assertEquals('Hello, World', (string)$response->getBody());
+        $this->assertEquals('Bar', $response->getHeaderLine('X-Foo'));
+    }
+
+    public function testSendMethodWithOptions()
+    {
+        $this->mockHandler->append(function (RequestInterface $request) {
+            $this->assertEquals('test-value', $request->getHeaderLine('X-Test-Header'));
+            return new Response(200);
+        });
+
+        $client = new MiddlewareClient(['handler' => $this->handlerStack], $this->testLogger);
+        $request = new Request('GET', 'http://example.com');
+        $response = $client->send($request, ['headers' => ['X-Test-Header' => 'test-value']]);
+
+        $this->assertEquals(200, $response->getStatusCode());
+    }
+
+    public function testSendMethodPropagatesExceptions()
+    {
+        $request = new Request('GET', 'http://example.com');
+        $this->mockHandler->append(new RequestException('Error Communicating with Server', $request));
+
+        $client = new MiddlewareClient(['handler' => $this->handlerStack], $this->testLogger);
+
+        $this->expectException(RequestException::class);
+        $this->expectExceptionMessage('Error Communicating with Server');
+
+        $client->send($request);
     }
 
     public function testMakeRequestSuccess()

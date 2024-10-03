@@ -22,6 +22,7 @@ declare(strict_types=1);
 namespace FOfX\GuzzleMiddleware;
 
 use GuzzleHttp\Client;
+use GuzzleHttp\ClientInterface;
 use GuzzleHttp\HandlerStack;
 use GuzzleHttp\Middleware;
 use GuzzleHttp\Exception\RequestException;
@@ -59,8 +60,9 @@ use GuzzleHttp\Psr7\HttpFactory;
  *
  * @package  FOfX\GuzzleMiddleware
  */
-class MiddlewareClient extends Client
+class MiddlewareClient
 {
+    private ClientInterface             $client;
     private array                       $debug          = [];
     private array                       $container      = [];
     private HandlerStack                $stack;
@@ -94,7 +96,7 @@ class MiddlewareClient extends Client
             'customConfig' => $config
         ]);
 
-        parent::__construct($config);
+        $this->client = new Client($config);
     }
 
     /**
@@ -118,6 +120,21 @@ class MiddlewareClient extends Client
         }
 
         return $defaultConfig;
+    }
+
+    /**
+     * Sends an HTTP request.
+     * 
+     * This method is an alias for the Guzzle client's send() method.
+     * 
+     * @param  RequestInterface  $request  The request to send.
+     * @param  array             $options  Additional options for the request.
+     * 
+     * @return ResponseInterface           The response from the request.
+     */
+    public function send(RequestInterface $request, array $options = []): ResponseInterface
+    {
+        return $this->client->send($request, $options);
     }
 
     /**
