@@ -64,7 +64,6 @@ class MiddlewareClient extends Client
     private array                       $debug          = [];
     private array                       $container      = [];
     private HandlerStack                $stack;
-    private array                       $output         = [];
     private LoggerInterface             $logger;
     private RequestFactoryInterface     $requestFactory;
 
@@ -344,101 +343,5 @@ class MiddlewareClient extends Client
 
         // Call the standalone printOutput() function
         printOutput($output, $truncate, $maxLength, $escape, $divider);
-    }
-
-    /**
-     * Test the printOutput function with truncation.
-     */
-    public function testPrintOutputWithTruncation()
-    {
-        $longBody = str_repeat('a', 2000);
-        $testOutput = [
-            [
-                'response' => [
-                    'body' => $longBody,
-                ],
-            ]
-        ];
-
-        ob_start();
-        \FOfX\GuzzleMiddleware\printOutput($testOutput, true, 1000);
-        $output = ob_get_clean();
-
-        $this->assertStringContainsString(str_repeat('a', 1000), $output);
-        $this->assertStringContainsString('... [TRUNCATED]', $output);
-        $this->assertStringNotContainsString(str_repeat('a', 1001), $output);
-    }
-
-    /**
-     * Test the printOutput function without truncation.
-     */
-    public function testPrintOutputWithoutTruncation()
-    {
-        $longBody = str_repeat('a', 2000);
-        $testOutput = [
-            [
-                'response' => [
-                    'body' => $longBody,
-                ],
-            ]
-        ];
-
-        ob_start();
-        \FOfX\GuzzleMiddleware\printOutput($testOutput, false);
-        $output = ob_get_clean();
-
-        $this->assertStringContainsString($longBody, $output);
-        $this->assertStringNotContainsString('... [TRUNCATED]', $output);
-    }
-
-    /**
-     * Test the printOutput function with custom maxLength.
-     */
-    public function testPrintOutputWithCustomMaxLength()
-    {
-        $longBody = str_repeat('a', 2000);
-        $testOutput = [
-            [
-                'response' => [
-                    'body' => $longBody,
-                ],
-            ]
-        ];
-
-        ob_start();
-        \FOfX\GuzzleMiddleware\printOutput($testOutput, true, 500);
-        $output = ob_get_clean();
-
-        $this->assertStringContainsString(str_repeat('a', 500), $output);
-        $this->assertStringContainsString('... [TRUNCATED]', $output);
-        $this->assertStringNotContainsString(str_repeat('a', 501), $output);
-    }
-
-    /**
-     * Test the printOutput function with custom divider.
-     */
-    public function testPrintOutputWithCustomDivider()
-    {
-        $testOutput = [
-            [
-                'request' => [
-                    'method' => 'GET',
-                    'url' => 'http://example.com',
-                ],
-                'response' => [
-                    'statusCode' => 200,
-                    'body' => 'Test body',
-                ],
-            ]
-        ];
-
-        $customDivider = '****';
-
-        ob_start();
-        \FOfX\GuzzleMiddleware\printOutput($testOutput, true, 1000, true, $customDivider);
-        $output = ob_get_clean();
-
-        $this->assertStringContainsString($customDivider, $output);
-        $this->assertStringNotContainsString(str_repeat('-', 50), $output);
     }
 }

@@ -383,4 +383,176 @@ class FunctionsTest extends TestCase
 
         $this->assertEquals('Response body', $output[0]['response']['body']);
     }
+
+    /**
+     * Test the printOutput function with default HTML escaping.
+     */
+    public function testPrintOutputWithEscaping()
+    {
+        $testOutput = [
+            [
+                'request' => [
+                    'method' => 'GET',
+                    'url' => 'http://example.com',
+                    'headers' => json_encode(['User-Agent' => 'Test Agent']),
+                    'body' => ''
+                ],
+                'response' => [
+                    'statusCode' => 200,
+                    'headers' => json_encode(['Content-Type' => 'text/html']),
+                    'body' => '<html><body>Test</body></html>',
+                    'contentLength' => 32
+                ],
+                'debug' => 'Debug information'
+            ]
+        ];
+
+        ob_start();
+        \FOfX\GuzzleMiddleware\printOutput($testOutput);
+        $output = ob_get_clean();
+
+        $this->assertStringContainsString('Request:', $output);
+        $this->assertStringContainsString('GET', $output);
+        $this->assertStringContainsString('http://example.com', $output);
+        $this->assertStringContainsString('Test Agent', $output);
+        $this->assertStringContainsString('Response:', $output);
+        $this->assertStringContainsString('200', $output);
+        $this->assertStringContainsString('text/html', $output);
+        $this->assertStringContainsString('&lt;html&gt;&lt;body&gt;Test&lt;/body&gt;&lt;/html&gt;', $output);
+        $this->assertStringContainsString('Debug information', $output);
+    }
+
+    /**
+     * Test the printOutput function without HTML escaping.
+     */
+    public function testPrintOutputWithoutEscaping()
+    {
+        $testOutput = [
+            [
+                'request' => [
+                    'method' => 'GET',
+                    'url' => 'http://example.com',
+                    'headers' => json_encode(['User-Agent' => 'Test Agent']),
+                    'body' => ''
+                ],
+                'response' => [
+                    'statusCode' => 200,
+                    'headers' => json_encode(['Content-Type' => 'text/html']),
+                    'body' => '<html><body>Test</body></html>',
+                    'contentLength' => 32
+                ],
+                'debug' => 'Debug information'
+            ]
+        ];
+
+        ob_start();
+        \FOfX\GuzzleMiddleware\printOutput($testOutput, true, 1000, false);
+        $output = ob_get_clean();
+
+        $this->assertStringContainsString('Request:', $output);
+        $this->assertStringContainsString('GET', $output);
+        $this->assertStringContainsString('http://example.com', $output);
+        $this->assertStringContainsString('Test Agent', $output);
+        $this->assertStringContainsString('Response:', $output);
+        $this->assertStringContainsString('200', $output);
+        $this->assertStringContainsString('text/html', $output);
+        $this->assertStringContainsString('<html><body>Test</body></html>', $output);
+        $this->assertStringContainsString('Debug information', $output);
+    }
+
+    /**
+     * Test the printOutput function with truncation.
+     */
+    public function testPrintOutputWithTruncation()
+    {
+        $longBody = str_repeat('a', 2000);
+        $testOutput = [
+            [
+                'response' => [
+                    'body' => $longBody,
+                ],
+            ]
+        ];
+
+        ob_start();
+        \FOfX\GuzzleMiddleware\printOutput($testOutput, true, 1000);
+        $output = ob_get_clean();
+
+        $this->assertStringContainsString(str_repeat('a', 1000), $output);
+        $this->assertStringContainsString('... [TRUNCATED]', $output);
+        $this->assertStringNotContainsString(str_repeat('a', 1001), $output);
+    }
+
+    /**
+     * Test the printOutput function without truncation.
+     */
+    public function testPrintOutputWithoutTruncation()
+    {
+        $longBody = str_repeat('a', 2000);
+        $testOutput = [
+            [
+                'response' => [
+                    'body' => $longBody,
+                ],
+            ]
+        ];
+
+        ob_start();
+        \FOfX\GuzzleMiddleware\printOutput($testOutput, false);
+        $output = ob_get_clean();
+
+        $this->assertStringContainsString($longBody, $output);
+        $this->assertStringNotContainsString('... [TRUNCATED]', $output);
+    }
+
+    /**
+     * Test the printOutput function with custom maxLength.
+     */
+    public function testPrintOutputWithCustomMaxLength()
+    {
+        $longBody = str_repeat('a', 2000);
+        $testOutput = [
+            [
+                'response' => [
+                    'body' => $longBody,
+                ],
+            ]
+        ];
+
+        ob_start();
+        \FOfX\GuzzleMiddleware\printOutput($testOutput, true, 500);
+        $output = ob_get_clean();
+
+        $this->assertStringContainsString(str_repeat('a', 500), $output);
+        $this->assertStringContainsString('... [TRUNCATED]', $output);
+        $this->assertStringNotContainsString(str_repeat('a', 501), $output);
+    }
+
+    /**
+     * Test the printOutput function with custom divider.
+     */
+    public function testPrintOutputWithCustomDivider()
+    {
+        $testOutput = [
+            [
+                'request' => [
+                    'method' => 'GET',
+                    'url' => 'http://example.com',
+                ],
+                'response' => [
+                    'statusCode' => 200,
+                    'body' => 'Test body',
+                ],
+            ]
+        ];
+
+        $customDivider = '****';
+
+        ob_start();
+        \FOfX\GuzzleMiddleware\printOutput($testOutput, true, 1000, true, $customDivider);
+        $output = ob_get_clean();
+
+        $this->assertStringContainsString($customDivider, $output);
+        $this->assertStringNotContainsString(str_repeat('-', 50), $output);
+    }
 }

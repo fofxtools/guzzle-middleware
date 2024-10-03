@@ -268,18 +268,35 @@ function printOutput(
     foreach ($output as $transaction) {
         // Increment the index for each transaction
         $currentIndex++;
+        // Set a fallback value for missing keys
+        $fallback = '(N/A)';
 
         $outputString .= "Request:" . PHP_EOL;
         $outputString .= $divider . PHP_EOL;
-        $outputString .= "  Method: {$transaction['request']['method']}" . PHP_EOL;
-        $outputString .= "  URL: {$transaction['request']['url']}" . PHP_EOL;
+
+        // Check if 'request' key exists and has 'method'
+        if (isset($transaction['request']['method']) && !empty($transaction['request']['method'])) {
+            $outputString .= "  Method: {$transaction['request']['method']}" . PHP_EOL;
+        } else {
+            $outputString .= "  Method: $fallback" . PHP_EOL;
+        }
+
+        // Check if 'request' key exists and has 'url'
+        if (isset($transaction['request']['url']) && !empty($transaction['request']['url'])) {
+            $outputString .= "  URL: {$transaction['request']['url']}" . PHP_EOL;
+        } else {
+            $outputString .= "  URL: $fallback" . PHP_EOL;
+        }
+
         $outputString .= $divider . PHP_EOL;
 
-        // Format and append request headers
-        $requestHeaders = json_decode($transaction['request']['headers'], true);
-        $outputString .= "  Headers:" . PHP_EOL;
-        $outputString .= $divider . PHP_EOL;
-        $outputString .= json_encode($requestHeaders, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . PHP_EOL;
+        // Format and append request headers if present
+        if (!empty($transaction['request']['headers'])) {
+            $requestHeaders = json_decode($transaction['request']['headers'], true);
+            $outputString .= "  Headers:" . PHP_EOL;
+            $outputString .= $divider . PHP_EOL;
+            $outputString .= json_encode($requestHeaders, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . PHP_EOL;
+        }
         $outputString .= $divider . PHP_EOL;
 
         // Append request body if present
@@ -296,24 +313,35 @@ function printOutput(
 
         $outputString .= "Response:" . PHP_EOL;
         $outputString .= $divider . PHP_EOL;
-        $outputString .= "  Status Code: {$transaction['response']['statusCode']}" . PHP_EOL;
-        $outputString .= $divider . PHP_EOL;
 
-        // Format and append response headers
-        $responseHeaders = json_decode($transaction['response']['headers'], true);
-        $outputString .= "  Headers:" . PHP_EOL;
-        $outputString .= $divider . PHP_EOL;
-        $outputString .= json_encode($responseHeaders, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . PHP_EOL;
-        $outputString .= $divider . PHP_EOL;
-
-        // Handle response body with optional truncation
-        $responseBody = $transaction['response']['body'];
-        if ($truncate && strlen($responseBody) > $maxLength) {
-            $responseBody = substr($responseBody, 0, $maxLength) . '... [TRUNCATED]';
+        // Check if 'response' key exists and has 'statusCode'
+        if (isset($transaction['response']['statusCode']) && !empty($transaction['response']['statusCode'])) {
+            $outputString .= "  Status Code: {$transaction['response']['statusCode']}" . PHP_EOL;
+        } else {
+            $outputString .= "  Status Code: $fallback" . PHP_EOL;
         }
-        $outputString .= "  Body:" . PHP_EOL;
+
         $outputString .= $divider . PHP_EOL;
-        $outputString .= $responseBody . PHP_EOL;
+
+        // Format and append response headers if present
+        if (!empty($transaction['response']['headers'])) {
+            $responseHeaders = json_decode($transaction['response']['headers'], true);
+            $outputString .= "  Headers:" . PHP_EOL;
+            $outputString .= $divider . PHP_EOL;
+            $outputString .= json_encode($responseHeaders, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . PHP_EOL;
+        }
+        $outputString .= $divider . PHP_EOL;
+
+        // Handle response body with optional truncation if present
+        if (!empty($transaction['response']['body'])) {
+            $responseBody = $transaction['response']['body'];
+            if ($truncate && strlen($responseBody) > $maxLength) {
+                $responseBody = substr($responseBody, 0, $maxLength) . '... [TRUNCATED]';
+            }
+            $outputString .= "  Body:" . PHP_EOL;
+            $outputString .= $divider . PHP_EOL;
+            $outputString .= $responseBody . PHP_EOL;
+        }
         $outputString .= $divider . PHP_EOL;
 
         // Optional debug info with truncation
