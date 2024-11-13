@@ -28,9 +28,11 @@ use GuzzleHttp\Exception\ConnectException;
 use GuzzleHttp\Psr7\Response;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
-use Psr\Log\LoggerInterface;
 use Psr\Http\Message\RequestFactoryInterface;
 use GuzzleHttp\Psr7\HttpFactory;
+use Monolog\Logger;
+use Monolog\Handler\StreamHandler;
+use Monolog\Level;
 
 /**
  * Class MiddlewareClient
@@ -41,10 +43,17 @@ use GuzzleHttp\Psr7\HttpFactory;
  * Basic usage example:
  * ```php
  * use FOfX\GuzzleMiddleware\MiddlewareClient;
- * use Psr\Log\NullLogger;
+ * use Monolog\Logger;
+ * use Monolog\Handler\StreamHandler;
+ * use Monolog\Level;
  *
  * // Create a new MiddlewareClient instance
- * $client = new MiddlewareClient([], new NullLogger());
+ * $client = new MiddlewareClient();  // Uses default Monolog logger
+ * // Or with custom file logger:
+ * $customLogger = new Logger('custom_logger', [
+ *     new StreamHandler(__DIR__ . '/guzzle-middleware.log', Level::Info)
+ * ]);
+ * $client = new MiddlewareClient([], $customLogger);
  *
  * // Make a request
  * $response = $client->makeRequest('GET', 'https://api.example.com/data');
@@ -62,7 +71,7 @@ class MiddlewareClient
     private array                       $debug     = [];
     private array                       $container = [];
     private HandlerStack                $stack;
-    private LoggerInterface             $logger;
+    private Logger                      $logger;
     private RequestFactoryInterface     $requestFactory;
 
     /**
@@ -70,14 +79,16 @@ class MiddlewareClient
      *
      * Initializes the Guzzle client with middleware for transaction history logging.
      *
-     * @param array            $config      Optional Guzzle configuration array.
-     * @param ?LoggerInterface $logger      Optional PSR-3 logger instance.
-     * @param array|null       $proxyConfig Optional proxy settings.
+     * @param array      $config      optional Guzzle configuration array
+     * @param ?Logger    $logger      optional Monolog Logger instance
+     * @param array|null $proxyConfig optional proxy settings
      */
-    public function __construct(array $config = [], ?LoggerInterface $logger = null, ?array $proxyConfig = null)
+    public function __construct(array $config = [], ?Logger $logger = null, ?array $proxyConfig = null)
     {
-        $this->logger = $logger ?? new \Psr\Log\NullLogger();
-        $this->stack  = $config['handler'] ?? HandlerStack::create();
+        $this->logger = $logger ?? new Logger('guzzle-middleware', [
+            new StreamHandler('php://stdout', Level::Info),
+        ]);
+        $this->stack = $config['handler'] ?? HandlerStack::create();
         $this->stack->push(Middleware::history($this->container));
 
         // Merge default configuration with any proxy settings and passed config
@@ -100,9 +111,9 @@ class MiddlewareClient
      *
      * Adds default timeout and optional proxy settings.
      *
-     * @param array|null $proxyConfig Optional proxy configuration.
+     * @param array|null $proxyConfig optional proxy configuration
      *
-     * @return array Default Guzzle configuration settings.
+     * @return array default Guzzle configuration settings
      */
     private function getDefaultConfig(?array $proxyConfig = null): array
     {
@@ -123,10 +134,10 @@ class MiddlewareClient
      *
      * This method is an alias for the Guzzle client's send() method.
      *
-     * @param RequestInterface $request The request to send.
-     * @param array            $options Additional options for the request.
+     * @param RequestInterface $request the request to send
+     * @param array            $options additional options for the request
      *
-     * @return ResponseInterface The response from the request.
+     * @return ResponseInterface the response from the request
      */
     public function send(RequestInterface $request, array $options = []): ResponseInterface
     {
@@ -137,10 +148,10 @@ class MiddlewareClient
      * Send an HTTP request with optional custom headers and body.
      *
      * @param string $method  HTTP method (e.g., 'GET', 'POST').
-     * @param string $uri     Request URI.
-     * @param array  $options Guzzle options, including headers and body.
+     * @param string $uri     request URI
+     * @param array  $options guzzle options, including headers and body
      *
-     * @return ResponseInterface The HTTP response.
+     * @return ResponseInterface the HTTP response
      */
     public function makeRequest(string $method, string $uri = '', array $options = []): ResponseInterface
     {
@@ -222,9 +233,9 @@ class MiddlewareClient
     /**
      * Handle exceptions by logging the error and creating a fallback response.
      *
-     * @param \Exception $e The exception to handle.
+     * @param \Exception $e the exception to handle
      *
-     * @return ResponseInterface Fallback HTTP response.
+     * @return ResponseInterface fallback HTTP response
      */
     private function handleException(\Exception $e): ResponseInterface
     {
@@ -256,8 +267,8 @@ class MiddlewareClient
     /**
      * Capture debug information from the debug stream.
      *
-     * @param resource $debugStream Stream capturing debug data.
-     * @param string   $uri         The request URI.
+     * @param resource $debugStream stream capturing debug data
+     * @param string   $uri         the request URI
      */
     private function captureDebugInfo($debugStream, string $uri): void
     {
@@ -285,7 +296,7 @@ class MiddlewareClient
      * contain redirects or duplicate requests. Always encodes headers as JSON for
      * consistency and readability in debugging and logging.
      *
-     * @return array Formatted output of the most recent transaction.
+     * @return array formatted output of the most recent transaction
      */
     public function getOutput(): array
     {

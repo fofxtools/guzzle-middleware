@@ -26,7 +26,7 @@ declare(strict_types=1);
 
 namespace FOfX\GuzzleMiddleware;
 
-use Psr\Log\LoggerInterface;
+use Monolog\Logger;
 
 /**
  * Merges multiple arrays recursively. Values in latter arguments take precedence over values in earlier arguments.
@@ -38,7 +38,7 @@ use Psr\Log\LoggerInterface;
  *
  * @param array ...$arrays The set of arrays that will be merged. Later arrays take precedence.
  *
- * @return array The merged array with distinct values.
+ * @return array the merged array with distinct values
  *
  * @example
  * $options1 = [
@@ -167,7 +167,7 @@ function arrayMergeRecursiveDistinct(array ...$arrays): array
  * - macOS:   "Guzzle (Macintosh; x86_64 Mac OS X)"
  * - Windows: "Guzzle (Windows NT 10.0; AMD64)"
  *
- * @return string The generated user agent string.
+ * @return string the generated user agent string
  */
 function getMinimalUserAgent(): string
 {
@@ -373,7 +373,7 @@ function printOutput(
 /**
  * Make a request using the MiddlewareClient.
  *
- * Note on the logger parameter: In PHP, when an object (like a LoggerInterface
+ * Note on the logger parameter: In PHP, when an object (like a Monolog Logger
  * implementation) is passed to a function, the function receives a copy of the
  * object handle, not a copy of the object itself. This means that while the
  * function can't reassign the caller's original variable, it can interact with
@@ -383,12 +383,12 @@ function printOutput(
  * MiddlewareClient will be reflected in the original logger object,
  * potentially adding new log entries to it.
  *
- * @param string           $method          HTTP method
- * @param string           $uri             URI for the request
- * @param array            $config          Guzzle configuration
- * @param array            $options         Request options
- * @param ?LoggerInterface $logger          Logger instance
- * @param bool             $rotateUserAgent Whether to rotate user agents
+ * @param string  $method          HTTP method
+ * @param string  $uri             URI for the request
+ * @param array   $config          Guzzle configuration
+ * @param array   $options         Request options
+ * @param ?Logger $logger          Monolog Logger instance
+ * @param bool    $rotateUserAgent Whether to rotate user agents
  *
  * @throws \GuzzleHttp\Exception\GuzzleException
  *
@@ -403,7 +403,7 @@ function makeMiddlewareRequest(
     string $uri,
     array $config = [],
     array $options = [],
-    ?LoggerInterface $logger = null,
+    ?Logger $logger = null,
     bool $rotateUserAgent = false
 ): array {
     $config  = arrayMergeRecursiveDistinct(createGuzzleConfig(), $config);
