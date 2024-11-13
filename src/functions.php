@@ -241,18 +241,20 @@ function createGuzzleOptions(bool $rotateUserAgent = false): array
 /**
  * Helper function to print the output from MiddlewareClient or makeMiddlewareRequest
  *
- * @param array  $output    The output array
- * @param bool   $truncate  Whether to truncate long outputs (default: true)
- * @param int    $maxLength Maximum length of truncation (default: 1000)
- * @param bool   $escape    Whether to apply htmlspecialchars to sanitize output (default: true)
- * @param string $divider   The divider string to separate sections (default: 50 dashes if null)
+ * @param array   $output    The output array
+ * @param bool    $truncate  Whether to truncate long outputs (default: true)
+ * @param int     $maxLength Maximum length of truncation (default: 1000)
+ * @param bool    $escape    Whether to apply htmlspecialchars to sanitize output (default: true)
+ * @param string  $divider   The divider string to separate sections (default: 50 dashes if null)
+ * @param ?Logger $logger    Monolog Logger instance
  */
 function printOutput(
     array $output,
     bool $truncate = true,
     int $maxLength = 1000,
     bool $escape = true,
-    string $divider = null
+    string $divider = null,
+    ?Logger $logger = null
 ): void {
     // Set the default divider if it's null
     if ($divider === null) {
@@ -366,8 +368,14 @@ function printOutput(
         $outputString = htmlspecialchars($outputString);
     }
 
-    // Output the final string
-    echo trim($outputString);
+    if ($logger === null) {
+        // If no logger is provided, fall back to echo
+        echo trim($outputString);
+    } else {
+        $logger->info('Request/Response Details:', [
+            'output' => trim($outputString),
+        ]);
+    }
 }
 
 /**

@@ -164,201 +164,47 @@ class FunctionsTest extends TestCase
         $this->assertEquals([], $configWithoutProxy);
     }
 
-    /**
-     * Test createGuzzleOptions with and without rotating the User-Agent.
-     */
-    public function testCreateGuzzleOptions()
-    {
-        $optionsWithoutRotation = \FOfX\GuzzleMiddleware\createGuzzleOptions(false);
-        $optionsWithRotation    = \FOfX\GuzzleMiddleware\createGuzzleOptions(true);
-
-        $this->assertArrayHasKey('headers', $optionsWithoutRotation);
-        $this->assertArrayHasKey('User-Agent', $optionsWithoutRotation['headers']);
-
-        // Check if the User-Agent follows the expected pattern
-        $this->assertMatchesRegularExpression('/^Guzzle \(.+\)$/', $optionsWithoutRotation['headers']['User-Agent']);
-
-        $this->assertArrayHasKey('timeout', $optionsWithoutRotation);
-        $this->assertEquals(10, $optionsWithoutRotation['timeout']);
-
-        $this->assertArrayHasKey('headers', $optionsWithRotation);
-        $this->assertArrayHasKey('User-Agent', $optionsWithRotation['headers']);
-
-        // For rotation, we can't predict the exact User-Agent, so we just check if it's a non-empty string
-        $this->assertNotEmpty($optionsWithRotation['headers']['User-Agent']);
-    }
-
-    /**
-     * Test makeMiddlewareRequest function.
-     */
-    public function testMakeMiddlewareRequest()
-    {
-        $mockHandler = new \GuzzleHttp\Handler\MockHandler([
-            new \GuzzleHttp\Psr7\Response(200, ['X-Foo' => 'Bar'], 'Hello, World'),
-        ]);
-        $handlerStack = \GuzzleHttp\HandlerStack::create($mockHandler);
-        $logger       = new Logger('test', [new TestHandler()]);
-        $config       = ['handler' => $handlerStack];
-        $options      = [];
-
-        $output = \FOfX\GuzzleMiddleware\makeMiddlewareRequest('GET', 'http://example.com', $config, $options, $logger, false);
-
-        $this->assertIsArray($output);
-        $this->assertCount(1, $output); // Ensure that the output has 1 request
-        $this->assertEquals('Hello, World', $output[0]['response']['body']);
-        $this->assertEquals(200, $output[0]['response']['statusCode']);
-
-        // Decode the JSON headers to access them as an array
-        $headers = json_decode($output[0]['response']['headers'], true);
-        $this->assertEquals('Bar', $headers['X-Foo'][0]);
-    }
-
     public function testCreateGuzzleConfigWithoutProxy()
     {
         $config = \FOfX\GuzzleMiddleware\createGuzzleConfig();
         $this->assertEquals([], $config);
     }
 
-    public function testMakeMiddlewareRequestWithEmptyConfigAndOptions()
+    /**
+     * Test createGuzzleOptions without user agent rotation.
+     */
+    public function testCreateGuzzleOptionsWithoutRotation()
     {
-        $this->mockHandler->append(new Response(200));
+        $options = \FOfX\GuzzleMiddleware\createGuzzleOptions(false);
 
-        $client = new MiddlewareClient(['handler' => $this->handlerStack], $this->logger);
-        $output = \FOfX\GuzzleMiddleware\makeMiddlewareRequest('GET', 'http://example.com', [], [], $this->logger);
+        $this->assertArrayHasKey('headers', $options);
+        $this->assertArrayHasKey('User-Agent', $options['headers']);
 
-        $this->assertIsArray($output);
-        $this->assertCount(1, $output); // Ensure only 1 transaction is returned
-        $this->assertEquals(200, $output[0]['response']['statusCode']);
+        // Check if the User-Agent follows the expected pattern
+        $this->assertMatchesRegularExpression('/^Guzzle \(.+\)$/', $options['headers']['User-Agent']);
+
+        $this->assertArrayHasKey('timeout', $options);
+        $this->assertEquals(10, $options['timeout']);
     }
 
-    public function testMakeMiddlewareRequestWithoutLogger()
+    /**
+     * Test createGuzzleOptions with user agent rotation.
+     */
+    public function testCreateGuzzleOptionsWithRotation()
     {
-        // Append a mock response
-        $this->mockHandler->append(new Response(200, ['X-Foo' => ['Bar']], 'Response body'));
+        $options = \FOfX\GuzzleMiddleware\createGuzzleOptions(true);
 
-        // Make the request without a logger
-        $output = \FOfX\GuzzleMiddleware\makeMiddlewareRequest('GET', 'http://example.com', ['handler' => $this->handlerStack], [], $this->logger);
+        $this->assertArrayHasKey('headers', $options);
+        $this->assertArrayHasKey('User-Agent', $options['headers']);
 
-        // Ensure output is an array and contains request/response data
-        $this->assertIsArray($output);
-        $this->assertArrayHasKey('request', $output[0]);
-        $this->assertArrayHasKey('response', $output[0]);
-        $this->assertArrayHasKey('debug', $output[0]);
+        // For rotation, we can't predict the exact User-Agent, so we just check if it's a non-empty string
+        $this->assertNotEmpty($options['headers']['User-Agent']);
 
-        // Decode the request headers JSON string
-        $requestHeaders = json_decode($output[0]['request']['headers'], true);
-
-        // Ensure the request headers are correctly parsed as an array
-        $this->assertIsArray($requestHeaders);
-        $this->assertArrayHasKey('User-Agent', $requestHeaders);
-
-        // Decode the response headers JSON string
-        $responseHeaders = json_decode($output[0]['response']['headers'], true);
-
-        // Ensure the response headers are correctly parsed as an array
-        $this->assertIsArray($responseHeaders);
-        $this->assertArrayHasKey('X-Foo', $responseHeaders);
-        $this->assertEquals('Bar', $responseHeaders['X-Foo'][0]);
-
-        $this->assertEquals('Response body', $output[0]['response']['body']);
-    }
-
-    public function testMakeMiddlewareRequestWithLogger()
-    {
-        $this->mockHandler->append(new Response(200, ['X-Foo' => ['Bar']], 'Response body'));
-
-        $output = \FOfX\GuzzleMiddleware\makeMiddlewareRequest(
-            'GET',
-            'http://example.com',
-            ['handler' => $this->handlerStack],
-            [],
-            $this->logger
-        );
-
-        $this->assertTrue(
-            $this->testHandler->hasRecordThatContains('Starting request', Level::Info),
-            'No "Starting request" message found in logs'
-        );
-    }
-
-    public function testMakeMiddlewareRequestWithEmptyConfigAndOptionsAndNullLogger()
-    {
-        // Append a mock response
-        $this->mockHandler->append(new Response(200, ['X-Foo' => ['Bar']], 'Response body'));
-
-        // Pass the mock handler to the Guzzle configuration
-        $config = ['handler' => $this->handlerStack];
-
-        // Create a null logger
-        $nullLogger = new Logger('null');
-        $nullLogger->pushHandler(new NullHandler());
-
-        // Make the request with a null logger, passing the mock handler configuration
-        $output = \FOfX\GuzzleMiddleware\makeMiddlewareRequest('GET', 'http://example.com', $config, [], $nullLogger, false);
-
-        // Ensure output is an array and contains request/response data
-        $this->assertIsArray($output);
-        $this->assertArrayHasKey('request', $output[0]);
-        $this->assertArrayHasKey('response', $output[0]);
-        $this->assertArrayHasKey('debug', $output[0]);
-
-        // Decode the request headers JSON string
-        $requestHeaders = json_decode($output[0]['request']['headers'], true);
-
-        // Check specific parts of the request
-        $this->assertEquals('GET', $output[0]['request']['method']);
-        $this->assertEquals('http://example.com', $output[0]['request']['url']);
-        $this->assertIsArray($requestHeaders);
-        $this->assertArrayHasKey('User-Agent', $requestHeaders);
-
-        // Decode the response headers JSON string
-        $responseHeaders = json_decode($output[0]['response']['headers'], true);
-        $this->assertIsArray($responseHeaders);
-        $this->assertArrayHasKey('X-Foo', $responseHeaders);
-        $this->assertEquals('Bar', $responseHeaders['X-Foo'][0]);
-
-        $this->assertEquals('Response body', $output[0]['response']['body']);
-    }
-
-    public function testMakeMiddlewareRequestWithConfigAndOptions()
-    {
-        // Append a mock response
-        $this->mockHandler->append(new Response(200, ['X-Foo' => ['Bar']], 'Response body'));
-
-        $config  = ['timeout' => 10, 'handler' => $this->handlerStack];
-        $options = ['headers' => ['User-Agent' => 'TestAgent']];
-
-        $output = \FOfX\GuzzleMiddleware\makeMiddlewareRequest('GET', 'http://example.com', $config, $options, $this->logger);
-
-        // Ensure output is an array and contains request/response data
-        $this->assertIsArray($output);
-        $this->assertArrayHasKey('request', $output[0]);
-        $this->assertArrayHasKey('response', $output[0]);
-        $this->assertArrayHasKey('debug', $output[0]);
-
-        // Decode the request headers JSON string
-        $requestHeaders = json_decode($output[0]['request']['headers'], true);
-
-        // Check specific parts of the request
-        $this->assertEquals('GET', $output[0]['request']['method']);
-        $this->assertEquals('http://example.com', $output[0]['request']['url']);
-
-        // Ensure the headers are correctly parsed as an array
-        $this->assertIsArray($requestHeaders);
-        $this->assertArrayHasKey('User-Agent', $requestHeaders);
-        $this->assertEquals('TestAgent', $requestHeaders['User-Agent'][0]);
-
-        $this->assertEquals('', $output[0]['request']['body']);  // No body sent in this case
-
-        // Decode the response headers JSON string
-        $responseHeaders = json_decode($output[0]['response']['headers'], true);
-
-        // Ensure the response headers are correctly parsed as an array
-        $this->assertIsArray($responseHeaders);
-        $this->assertArrayHasKey('X-Foo', $responseHeaders);
-        $this->assertEquals('Bar', $responseHeaders['X-Foo'][0]);
-
-        $this->assertEquals('Response body', $output[0]['response']['body']);
+        // Verify other headers and timeouts are set
+        $this->assertArrayHasKey('Accept-Language', $options['headers']);
+        $this->assertArrayHasKey('Connection', $options['headers']);
+        $this->assertArrayHasKey('Cache-Control', $options['headers']);
+        $this->assertArrayHasKey('timeout', $options);
     }
 
     /**
@@ -531,5 +377,224 @@ class FunctionsTest extends TestCase
 
         $this->assertStringContainsString($customDivider, $output);
         $this->assertStringNotContainsString(str_repeat('-', 50), $output);
+    }
+
+    public function testPrintOutputWithLogger()
+    {
+        $testOutput = [
+            [
+                'request' => [
+                    'method' => 'GET',
+                    'url'    => 'http://example.com',
+                ],
+                'response' => [
+                    'statusCode' => 200,
+                    'body'       => 'Test body',
+                ],
+            ],
+        ];
+
+        \FOfX\GuzzleMiddleware\printOutput($testOutput, true, 1000, true, null, $this->logger);
+
+        // Verify that the logger received the output
+        $this->assertTrue(
+            $this->testHandler->hasRecordThatContains('Request/Response Details', Level::Info),
+            'No log record found for output'
+        );
+    }
+
+    public function testPrintOutputWithoutLogger()
+    {
+        $testOutput = [
+            [
+                'request' => [
+                    'method' => 'GET',
+                    'url'    => 'http://example.com',
+                ],
+                'response' => [
+                    'statusCode' => 200,
+                    'body'       => 'Test body',
+                ],
+            ],
+        ];
+
+        ob_start();
+        \FOfX\GuzzleMiddleware\printOutput($testOutput, true, 1000, true, null, null);
+        $output = ob_get_clean();
+
+        // Verify output was echoed
+        $this->assertNotEmpty($output);
+        // Verify it contains expected content
+        $this->assertStringContainsString('GET', $output);
+        $this->assertStringContainsString('http://example.com', $output);
+        $this->assertStringContainsString('200', $output);
+        $this->assertStringContainsString('Test body', $output);
+    }
+
+    /**
+     * Test makeMiddlewareRequest function.
+     */
+    public function testMakeMiddlewareRequest()
+    {
+        $mockHandler = new \GuzzleHttp\Handler\MockHandler([
+            new \GuzzleHttp\Psr7\Response(200, ['X-Foo' => 'Bar'], 'Hello, World'),
+        ]);
+        $handlerStack = \GuzzleHttp\HandlerStack::create($mockHandler);
+        $logger       = new Logger('test', [new TestHandler()]);
+        $config       = ['handler' => $handlerStack];
+        $options      = [];
+
+        $output = \FOfX\GuzzleMiddleware\makeMiddlewareRequest('GET', 'http://example.com', $config, $options, $logger, false);
+
+        $this->assertIsArray($output);
+        $this->assertCount(1, $output); // Ensure that the output has 1 request
+        $this->assertEquals('Hello, World', $output[0]['response']['body']);
+        $this->assertEquals(200, $output[0]['response']['statusCode']);
+
+        // Decode the JSON headers to access them as an array
+        $headers = json_decode($output[0]['response']['headers'], true);
+        $this->assertEquals('Bar', $headers['X-Foo'][0]);
+    }
+
+    public function testMakeMiddlewareRequestWithEmptyConfigAndOptions()
+    {
+        $this->mockHandler->append(new Response(200));
+
+        $client = new MiddlewareClient(['handler' => $this->handlerStack], $this->logger);
+        $output = \FOfX\GuzzleMiddleware\makeMiddlewareRequest('GET', 'http://example.com', [], [], $this->logger);
+
+        $this->assertIsArray($output);
+        $this->assertCount(1, $output); // Ensure only 1 transaction is returned
+        $this->assertEquals(200, $output[0]['response']['statusCode']);
+    }
+
+    public function testMakeMiddlewareRequestWithoutLogger()
+    {
+        // Append a mock response
+        $this->mockHandler->append(new Response(200, ['X-Foo' => ['Bar']], 'Response body'));
+
+        // Make the request without a logger
+        $output = \FOfX\GuzzleMiddleware\makeMiddlewareRequest('GET', 'http://example.com', ['handler' => $this->handlerStack], [], $this->logger);
+
+        // Ensure output is an array and contains request/response data
+        $this->assertIsArray($output);
+        $this->assertArrayHasKey('request', $output[0]);
+        $this->assertArrayHasKey('response', $output[0]);
+        $this->assertArrayHasKey('debug', $output[0]);
+
+        // Decode the request headers JSON string
+        $requestHeaders = json_decode($output[0]['request']['headers'], true);
+
+        // Ensure the request headers are correctly parsed as an array
+        $this->assertIsArray($requestHeaders);
+        $this->assertArrayHasKey('User-Agent', $requestHeaders);
+
+        // Decode the response headers JSON string
+        $responseHeaders = json_decode($output[0]['response']['headers'], true);
+
+        // Ensure the response headers are correctly parsed as an array
+        $this->assertIsArray($responseHeaders);
+        $this->assertArrayHasKey('X-Foo', $responseHeaders);
+        $this->assertEquals('Bar', $responseHeaders['X-Foo'][0]);
+
+        $this->assertEquals('Response body', $output[0]['response']['body']);
+    }
+
+    public function testMakeMiddlewareRequestWithLogger()
+    {
+        $this->mockHandler->append(new Response(200, ['X-Foo' => ['Bar']], 'Response body'));
+
+        $output = \FOfX\GuzzleMiddleware\makeMiddlewareRequest(
+            'GET',
+            'http://example.com',
+            ['handler' => $this->handlerStack],
+            [],
+            $this->logger
+        );
+
+        $this->assertTrue(
+            $this->testHandler->hasRecordThatContains('Starting request', Level::Info),
+            'No "Starting request" message found in logs'
+        );
+    }
+
+    public function testMakeMiddlewareRequestWithEmptyConfigAndOptionsAndNullLogger()
+    {
+        // Append a mock response
+        $this->mockHandler->append(new Response(200, ['X-Foo' => ['Bar']], 'Response body'));
+
+        // Pass the mock handler to the Guzzle configuration
+        $config = ['handler' => $this->handlerStack];
+
+        // Create a null logger
+        $nullLogger = new Logger('null');
+        $nullLogger->pushHandler(new NullHandler());
+
+        // Make the request with a null logger, passing the mock handler configuration
+        $output = \FOfX\GuzzleMiddleware\makeMiddlewareRequest('GET', 'http://example.com', $config, [], $nullLogger, false);
+
+        // Ensure output is an array and contains request/response data
+        $this->assertIsArray($output);
+        $this->assertArrayHasKey('request', $output[0]);
+        $this->assertArrayHasKey('response', $output[0]);
+        $this->assertArrayHasKey('debug', $output[0]);
+
+        // Decode the request headers JSON string
+        $requestHeaders = json_decode($output[0]['request']['headers'], true);
+
+        // Check specific parts of the request
+        $this->assertEquals('GET', $output[0]['request']['method']);
+        $this->assertEquals('http://example.com', $output[0]['request']['url']);
+        $this->assertIsArray($requestHeaders);
+        $this->assertArrayHasKey('User-Agent', $requestHeaders);
+
+        // Decode the response headers JSON string
+        $responseHeaders = json_decode($output[0]['response']['headers'], true);
+        $this->assertIsArray($responseHeaders);
+        $this->assertArrayHasKey('X-Foo', $responseHeaders);
+        $this->assertEquals('Bar', $responseHeaders['X-Foo'][0]);
+
+        $this->assertEquals('Response body', $output[0]['response']['body']);
+    }
+
+    public function testMakeMiddlewareRequestWithConfigAndOptions()
+    {
+        // Append a mock response
+        $this->mockHandler->append(new Response(200, ['X-Foo' => ['Bar']], 'Response body'));
+
+        $config  = ['timeout' => 10, 'handler' => $this->handlerStack];
+        $options = ['headers' => ['User-Agent' => 'TestAgent']];
+
+        $output = \FOfX\GuzzleMiddleware\makeMiddlewareRequest('GET', 'http://example.com', $config, $options, $this->logger);
+
+        // Ensure output is an array and contains request/response data
+        $this->assertIsArray($output);
+        $this->assertArrayHasKey('request', $output[0]);
+        $this->assertArrayHasKey('response', $output[0]);
+        $this->assertArrayHasKey('debug', $output[0]);
+
+        // Decode the request headers JSON string
+        $requestHeaders = json_decode($output[0]['request']['headers'], true);
+
+        // Check specific parts of the request
+        $this->assertEquals('GET', $output[0]['request']['method']);
+        $this->assertEquals('http://example.com', $output[0]['request']['url']);
+
+        // Ensure the headers are correctly parsed as an array
+        $this->assertIsArray($requestHeaders);
+        $this->assertArrayHasKey('User-Agent', $requestHeaders);
+        $this->assertEquals('TestAgent', $requestHeaders['User-Agent'][0]);
+
+        $this->assertEquals('', $output[0]['request']['body']);  // No body sent in this case
+
+        // Decode the response headers JSON string
+        $responseHeaders = json_decode($output[0]['response']['headers'], true);
+
+        // Ensure the response headers are correctly parsed as an array
+        $this->assertIsArray($responseHeaders);
+        $this->assertArrayHasKey('X-Foo', $responseHeaders);
+        $this->assertEquals('Bar', $responseHeaders['X-Foo'][0]);
+
+        $this->assertEquals('Response body', $output[0]['response']['body']);
     }
 }

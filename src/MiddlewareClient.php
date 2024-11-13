@@ -50,9 +50,8 @@ use Monolog\Level;
  * // Create a new MiddlewareClient instance
  * $client = new MiddlewareClient();  // Uses default Monolog logger
  * // Or with custom file logger:
- * $customLogger = new Logger('custom_logger', [
- *     new StreamHandler(__DIR__ . '/guzzle-middleware.log', Level::Info)
- * ]);
+ * $customLogger = new Logger('guzzle-middleware');
+ * $customLogger->pushHandler(new StreamHandler(__DIR__ . '/guzzle-middleware.log', Level::Info));
  * $client = new MiddlewareClient([], $customLogger);
  *
  * // Make a request
@@ -356,17 +355,19 @@ class MiddlewareClient
      * @param int         $maxLength Maximum length of truncation (default: 1000)
      * @param bool        $escape    Whether to apply htmlspecialchars to sanitize output (default: true)
      * @param string|null $divider   The divider string to separate sections (default: 50 dashes if null)
+     * @param bool        $useLogger Whether to use the Monolog logger (default: true)
      */
     public function printOutput(
         bool $truncate = true,
         int $maxLength = 1000,
         bool $escape = true,
-        string $divider = null
+        string $divider = null,
+        bool $useLogger = true
     ): void {
         // Retrieve the output using getOutput()
         $output = $this->getOutput();
 
         // Call the standalone printOutput() function
-        printOutput($output, $truncate, $maxLength, $escape, $divider);
+        printOutput($output, $truncate, $maxLength, $escape, $divider, $useLogger ? $this->logger : null);
     }
 }

@@ -30,6 +30,21 @@ class MiddlewareClientTest extends TestCase
         $this->logger->pushHandler($this->testHandler);
     }
 
+    public function testProxyConfiguration()
+    {
+        $proxyUrl = 'http://proxy.example.com:8080';
+        $client   = new MiddlewareClient(['proxy' => $proxyUrl], $this->logger);
+
+        $mock = new MockHandler([
+            new Response(200, ['X-Proxy-Used' => 'true']),
+        ]);
+        $handlerStack = HandlerStack::create($mock);
+        $client       = new MiddlewareClient(['handler' => $handlerStack, 'proxy' => $proxyUrl], $this->logger);
+
+        $response = $client->makeRequest('GET', 'http://example.com');
+        $this->assertEquals('true', $response->getHeaderLine('X-Proxy-Used'));
+    }
+
     public function testSendMethodReturnsResponse()
     {
         $this->mockHandler->append(new Response(200, ['X-Foo' => 'Bar'], 'Hello, World'));
@@ -71,6 +86,18 @@ class MiddlewareClientTest extends TestCase
         $client->send($request);
     }
 
+    public function testSendRequest()
+    {
+        $this->mockHandler->append(new Response(200, [], 'Response Body'));
+
+        $client   = new MiddlewareClient(['handler' => $this->handlerStack], $this->logger);
+        $request  = new Request('POST', 'http://example.com', ['Content-Type' => 'application/json'], '{"key":"value"}');
+        $response = $client->send($request);
+
+        $this->assertEquals(200, $response->getStatusCode());
+        $this->assertEquals('Response Body', (string)$response->getBody());
+    }
+
     public function testMakeRequestSuccess()
     {
         $mock = new MockHandler([
@@ -98,19 +125,24 @@ class MiddlewareClientTest extends TestCase
         $client->makeRequest('GET', 'http://example.com', ['headers' => ['X-Test-Header' => 'test-value']]);
     }
 
-    public function testSendRequest()
+    public function testMakeRequestWithLargeBody()
     {
-        $this->mockHandler->append(new Response(200, [], 'Response Body'));
+        $largeBody = str_repeat('LargePayload', 10000);
+        $this->mockHandler->append(new Response(200, [], $largeBody));  // Set the large body in the mock response
 
         $client   = new MiddlewareClient(['handler' => $this->handlerStack], $this->logger);
-        $request  = new Request('POST', 'http://example.com', ['Content-Type' => 'application/json'], '{"key":"value"}');
-        $response = $client->send($request);
+        $response = $client->makeRequest('POST', 'http://example.com', ['body' => $largeBody]);
 
         $this->assertEquals(200, $response->getStatusCode());
-        $this->assertEquals('Response Body', (string)$response->getBody());
+
+        // Rewind the response body to ensure we can read it
+        $response->getBody()->rewind();
+
+        // Assert the response body matches the large body
+        $this->assertEquals($largeBody, (string)$response->getBody());
     }
 
-    public function testErrorHandling()
+    public function testMakeRequestErrorHandling()
     {
         $this->mockHandler->append(new Response(500, [], 'Server Error'));
 
@@ -124,7 +156,7 @@ class MiddlewareClientTest extends TestCase
         $this->assertTrue($this->testHandler->hasErrorRecords(), 'No error records found in log');
     }
 
-    public function testNetworkError()
+    public function testMakeRequestNetworkError()
     {
         $this->mockHandler->append(new RequestException('Network Error', new Request('GET', 'http://example.com')));
 
@@ -135,6 +167,17 @@ class MiddlewareClientTest extends TestCase
             return str_contains($record->message, 'Request failed') && $record->level === Level::Error;
         });
         $this->assertNotEmpty($logs, 'No error logs found for network error');
+    }
+
+    public function testMakeRequestRequestExceptionWithoutResponse()
+    {
+        $this->mockHandler->append(new RequestException('Error without response', new Request('GET', 'http://example.com')));
+
+        $client   = new MiddlewareClient(['handler' => $this->handlerStack], $this->logger);
+        $response = $client->makeRequest('GET', 'http://example.com');
+
+        $this->assertEquals(408, $response->getStatusCode());
+        $this->assertJsonStringEqualsJsonString('{"error":"Error without response"}', (string)$response->getBody());
     }
 
     public function testGetOutput()
@@ -157,22 +200,24 @@ class MiddlewareClientTest extends TestCase
         $this->assertEquals('application/json', $headers['Content-Type'][0]);
     }
 
-    public function testProxyConfiguration()
+    public function testGetOutputHandlesRedirect()
     {
-        $proxyUrl = 'http://proxy.example.com:8080';
-        $client   = new MiddlewareClient(['proxy' => $proxyUrl], $this->logger);
+        $this->mockHandler->append(
+            new Response(301, ['Location' => 'http://example.com/redirected']),
+            new Response(200, [], 'Redirected Content')
+        );
 
-        $mock = new MockHandler([
-            new Response(200, ['X-Proxy-Used' => 'true']),
-        ]);
-        $handlerStack = HandlerStack::create($mock);
-        $client       = new MiddlewareClient(['handler' => $handlerStack, 'proxy' => $proxyUrl], $this->logger);
+        $client = new MiddlewareClient(['handler' => $this->handlerStack], $this->logger);
+        $client->makeRequest('GET', 'http://example.com');
+        $output = $client->getOutput();
 
-        $response = $client->makeRequest('GET', 'http://example.com');
-        $this->assertEquals('true', $response->getHeaderLine('X-Proxy-Used'));
+        // Ensure the final response is captured
+        $this->assertCount(1, $output); // Only the final response should be in the output
+        $this->assertEquals(200, $output[0]['response']['statusCode']); // Ensure final response status is 200
+        $this->assertEquals('Redirected Content', $output[0]['response']['body']); // Ensure final response body is correct
     }
 
-    public function testDebugCapture()
+    public function testGetOutputIncludesDebugInfo()
     {
         $mock = new MockHandler([
             function ($request, $options) {
@@ -192,34 +237,6 @@ class MiddlewareClientTest extends TestCase
         $this->assertNotEmpty($output[0]['debug']);
     }
 
-    public function testRedirectHandling()
-    {
-        $this->mockHandler->append(
-            new Response(301, ['Location' => 'http://example.com/redirected']),
-            new Response(200, [], 'Redirected Content')
-        );
-
-        $client = new MiddlewareClient(['handler' => $this->handlerStack], $this->logger);
-        $client->makeRequest('GET', 'http://example.com');
-        $output = $client->getOutput();
-
-        // Ensure the final response is captured
-        $this->assertCount(1, $output); // Only the final response should be in the output
-        $this->assertEquals(200, $output[0]['response']['statusCode']); // Ensure final response status is 200
-        $this->assertEquals('Redirected Content', $output[0]['response']['body']); // Ensure final response body is correct
-    }
-
-    public function testRequestExceptionWithoutResponse()
-    {
-        $this->mockHandler->append(new RequestException('Error without response', new Request('GET', 'http://example.com')));
-
-        $client   = new MiddlewareClient(['handler' => $this->handlerStack], $this->logger);
-        $response = $client->makeRequest('GET', 'http://example.com');
-
-        $this->assertEquals(408, $response->getStatusCode());
-        $this->assertJsonStringEqualsJsonString('{"error":"Error without response"}', (string)$response->getBody());
-    }
-
     public function testGetOutputWithNoTransactions()
     {
         $client = new MiddlewareClient(['handler' => $this->handlerStack], $this->logger);
@@ -228,20 +245,39 @@ class MiddlewareClientTest extends TestCase
         $this->assertEmpty($output); // Expect an empty output array
     }
 
-    public function testMakeRequestWithLargeBody()
+    public function testPrintOutputWithLogger()
     {
-        $largeBody = str_repeat('LargePayload', 10000);
-        $this->mockHandler->append(new Response(200, [], $largeBody));  // Set the large body in the mock response
+        $this->mockHandler->append(new Response(200, ['X-Foo' => 'Bar'], 'Hello, World'));
+        $client = new MiddlewareClient(['handler' => $this->handlerStack], $this->logger);
+        $client->makeRequest('GET', 'http://example.com');
 
-        $client   = new MiddlewareClient(['handler' => $this->handlerStack], $this->logger);
-        $response = $client->makeRequest('POST', 'http://example.com', ['body' => $largeBody]);
+        ob_start();
+        $client->printOutput(true, 1000, true, null, true);
+        $output = ob_get_clean();
 
-        $this->assertEquals(200, $response->getStatusCode());
+        // Verify that the logger received the output
+        $this->assertTrue(
+            $this->testHandler->hasRecordThatContains('Request/Response Details', Level::Info),
+            'No log record found for output'
+        );
+    }
 
-        // Rewind the response body to ensure we can read it
-        $response->getBody()->rewind();
+    public function testPrintOutputWithoutLogger()
+    {
+        $this->mockHandler->append(new Response(200, ['X-Foo' => 'Bar'], 'Hello, World'));
+        $client = new MiddlewareClient(['handler' => $this->handlerStack], $this->logger);
+        $client->makeRequest('GET', 'http://example.com');
 
-        // Assert the response body matches the large body
-        $this->assertEquals($largeBody, (string)$response->getBody());
+        ob_start();
+        $client->printOutput(true, 1000, true, null, false);
+        $output = ob_get_clean();
+
+        // Verify output was echoed
+        $this->assertNotEmpty($output);
+        // Verify logger didn't receive the output
+        $this->assertFalse(
+            $this->testHandler->hasRecordThatContains('Request/Response Details', Level::Info),
+            'Unexpected log record found'
+        );
     }
 }
