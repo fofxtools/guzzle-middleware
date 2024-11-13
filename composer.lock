@@ -4,8 +4,73 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "ede3c01f29934918f9838b9f5d1d78a2",
+    "content-hash": "610111bf7f569859aca275933a838e90",
     "packages": [
+        {
+            "name": "fofx/helper",
+            "version": "v1.1.3",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/fofxtools/helper.git",
+                "reference": "049d1199e441e85f6d1fffde800863249a5a7677"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/fofxtools/helper/zipball/049d1199e441e85f6d1fffde800863249a5a7677",
+                "reference": "049d1199e441e85f6d1fffde800863249a5a7677",
+                "shasum": ""
+            },
+            "require": {
+                "ext-mbstring": "*",
+                "php": "^8.0"
+            },
+            "require-dev": {
+                "fakerphp/faker": "^1.23",
+                "friendsofphp/php-cs-fixer": "^3.64",
+                "phpstan/phpstan": "^1.12",
+                "phpunit/phpunit": "^10.5"
+            },
+            "type": "library",
+            "autoload": {
+                "files": [
+                    "config/helper.constants.php",
+                    "src/array.php",
+                    "src/buffer.php",
+                    "src/datetime.php",
+                    "src/file.php",
+                    "src/functions.php",
+                    "src/math.php",
+                    "src/memory.php",
+                    "src/scraping.php",
+                    "src/server.php",
+                    "src/string.php",
+                    "src/text.php",
+                    "bootstrap/init.php"
+                ],
+                "psr-4": {
+                    "FOfX\\Helper\\": "src/"
+                },
+                "classmap": [
+                    "src/"
+                ]
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "fofx",
+                    "email": "177870764+fofxtools@users.noreply.github.com"
+                }
+            ],
+            "description": "Helper functions.",
+            "support": {
+                "issues": "https://github.com/fofxtools/helper/issues",
+                "source": "https://github.com/fofxtools/helper/tree/v1.1.3"
+            },
+            "time": "2024-10-29T19:44:24+00:00"
+        },
         {
             "name": "guzzlehttp/guzzle",
             "version": "7.9.2",

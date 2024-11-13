@@ -27,129 +27,7 @@ declare(strict_types=1);
 namespace FOfX\GuzzleMiddleware;
 
 use Monolog\Logger;
-
-/**
- * Merges multiple arrays recursively. Values in latter arguments take precedence over values in earlier arguments.
- * Overwrites in case of associative keys. In case of numeric keys, it appends if the value is not already present.
- *
- * Based on code in comments by martyniuk dot vasyl and mark dot roduner.
- *
- * @link     https://stackoverflow.com/questions/1747507/merge-multiple-arrays-recursively
- *
- * @param array ...$arrays The set of arrays that will be merged. Later arrays take precedence.
- *
- * @return array the merged array with distinct values
- *
- * @example
- * $options1 = [
- *     'headers' => [
- *         'User-Agent' => 'Mozilla/5.0 (X11; Linux x86_64)',
- *         'Accept-Language' => 'en-US,en;q=1.0'
- *     ],
- *     'connect_timeout' => 10,
- *     'timeout' => 10
- * ];
- *
- * $options2 = [
- *     'headers' => [
- *         'User-Agent' => 'Guzzle',
- *         'X-Foo' => ['Bar', 'Baz']
- *     ],
- *     'connect_timeout' => 20,
- *     'timeout' => 20
- * ];
- *
- * $merged = arrayMergeRecursiveDistinct($options1, $options2);
- * print_r($merged);
- *
- * // Output:
- * Array
- * (
- *     [headers] => Array
- *         (
- *             [User-Agent] => Guzzle
- *             [Accept-Language] => en-US,en;q=1.0
- *             [X-Foo] => Array
- *                 (
- *                     [0] => Bar
- *                     [1] => Baz
- *                 )
- *         )
- *     [connect_timeout] => 20
- *     [timeout] => 20
- * )
- * @example
- * $options1 = [
- *     'headers' => [
- *         'User-Agent' => 'Mozilla/5.0 (X11; Linux x86_64)',
- *         'Accept-Language' => 'en-US,en;q=1.0'
- *     ],
- *     'connect_timeout' => 10,
- *     'timeout' => 10
- * ];
- *
- * $options2 = [
- *     'headers' => [
- *         'User-Agent' => 'Guzzle',
- *         'X-Foo' => ['Bar', 'Baz']
- *     ],
- *     'connect_timeout' => 20,
- *     'timeout' => 20
- * ];
- *
- * $options3 = $options4 = $options5 = $options6 = [];
- * $arrays = [$options4, $options2, $options3, $options1, $options5, $options6];
- * $merged = arrayMergeRecursiveDistinct(...$arrays);
- * print_r($merged);
- *
- * // Output:
- * Array
- * (
- *     [headers] => Array
- *         (
- *             [User-Agent] => Mozilla/5.0 (X11; Linux x86_64)
- *             [X-Foo] => Array
- *                 (
- *                     [0] => Bar
- *                     [1] => Baz
- *                 )
- *             [Accept-Language] => en-US,en;q=1.0
- *         )
- *     [connect_timeout] => 10
- *     [timeout] => 10
- * )
- */
-function arrayMergeRecursiveDistinct(array ...$arrays): array
-{
-    // Use the first array as the base for merging
-    $base = array_shift($arrays);
-
-    // Iterate over the remaining arrays to merge them into the base array
-    foreach ($arrays as $array) {
-        foreach ($array as $key => $value) {
-            // If both the base and the current value are arrays, merge them recursively
-            // Else check if it is a numeric key. If it is not a numeric key, then add this value to the base with the given key.
-            // To prevent "PHP Warning:  Undefined array key", you must suppress warnings like "@is_array($base[$key])"
-            // or check for the key using isset($base[$key])
-            if (is_array($value) && isset($base[$key]) && is_array($base[$key])) {
-                $base[$key] = arrayMergeRecursiveDistinct($base[$key], $value);
-            }
-            // For numeric keys, append to the base array if the value is not already present
-            elseif (is_numeric($key)) {
-                if (!in_array($value, $base, true)) {
-                    $base[] = $value;
-                }
-            }
-            // For associative keys, overwrite or add the value in the base array
-            else {
-                $base[$key] = $value;
-            }
-        }
-    }
-
-    // Return the merged array
-    return $base;
-}
+use FOfX\Helper;
 
 /**
  * Generate a minimal, OS-accurate user agent string.
@@ -272,6 +150,7 @@ function printOutput(
         // Set a fallback value for missing keys
         $fallback = '(N/A)';
 
+        $outputString .= $divider . PHP_EOL;
         $outputString .= 'Request:' . PHP_EOL;
         $outputString .= $divider . PHP_EOL;
 
@@ -402,7 +281,6 @@ function printOutput(
  *
  * @return array Formatted output of the request
  *
- * @see     arrayMergeRecursiveDistinct
  * @see     createGuzzleConfig
  * @see     createGuzzleOptions
  */
@@ -414,8 +292,8 @@ function makeMiddlewareRequest(
     ?Logger $logger = null,
     bool $rotateUserAgent = false
 ): array {
-    $config  = arrayMergeRecursiveDistinct(createGuzzleConfig(), $config);
-    $options = arrayMergeRecursiveDistinct(createGuzzleOptions($rotateUserAgent), $options);
+    $config  = Helper\array_merge_recursive_distinct(createGuzzleConfig(), $config);
+    $options = Helper\array_merge_recursive_distinct(createGuzzleOptions($rotateUserAgent), $options);
 
     $client = new MiddlewareClient($config, $logger);
     $client->makeRequest($method, $uri, $options);

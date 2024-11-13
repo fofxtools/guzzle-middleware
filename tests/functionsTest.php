@@ -11,6 +11,7 @@ use Monolog\Logger;
 use Monolog\Handler\TestHandler;
 use Monolog\Level;
 use Monolog\Handler\NullHandler;
+use FOfX\Helper;
 
 /**
  * Test suite for functions in functions.php.
@@ -39,7 +40,7 @@ class FunctionsTest extends TestCase
         $array1 = ['a' => 1, 'b' => 2];
         $array2 = ['a' => 3, 'c' => 4];
 
-        $result = \FOfX\GuzzleMiddleware\arrayMergeRecursiveDistinct($array1, $array2);
+        $result = Helper\array_merge_recursive_distinct($array1, $array2);
 
         $this->assertEquals(['a' => 3, 'b' => 2, 'c' => 4], $result);
     }
@@ -52,7 +53,7 @@ class FunctionsTest extends TestCase
         $array1 = [1, 2, 3];
         $array2 = [3, 4, 5];
 
-        $result = \FOfX\GuzzleMiddleware\arrayMergeRecursiveDistinct($array1, $array2);
+        $result = Helper\array_merge_recursive_distinct($array1, $array2);
 
         $this->assertEquals([1, 2, 3, 4, 5], $result);
     }
@@ -65,7 +66,7 @@ class FunctionsTest extends TestCase
         $array1 = ['a' => ['x' => 1], 'b' => 2];
         $array2 = ['a' => ['y' => 3], 'c' => 4];
 
-        $result = \FOfX\GuzzleMiddleware\arrayMergeRecursiveDistinct($array1, $array2);
+        $result = Helper\array_merge_recursive_distinct($array1, $array2);
 
         $this->assertEquals(['a' => ['x' => 1, 'y' => 3], 'b' => 2, 'c' => 4], $result);
     }
@@ -78,7 +79,7 @@ class FunctionsTest extends TestCase
         $array1 = ['a' => 1, 2, 3];
         $array2 = ['a' => 4, 5, 6];
 
-        $result = \FOfX\GuzzleMiddleware\arrayMergeRecursiveDistinct($array1, $array2);
+        $result = Helper\array_merge_recursive_distinct($array1, $array2);
 
         $this->assertEquals(['a' => 4, 2, 3, 5, 6], $result);
     }
@@ -91,7 +92,7 @@ class FunctionsTest extends TestCase
         $array1 = [];
         $array2 = [];
 
-        $result = \FOfX\GuzzleMiddleware\arrayMergeRecursiveDistinct($array1, $array2);
+        $result = Helper\array_merge_recursive_distinct($array1, $array2);
 
         $this->assertEquals([], $result);
     }
@@ -106,7 +107,7 @@ class FunctionsTest extends TestCase
         $array3 = ['c' => 5];
         $array4 = ['a' => ['z' => 6], 'c' => 7];
 
-        $result = \FOfX\GuzzleMiddleware\arrayMergeRecursiveDistinct($array1, $array2, $array3, $array4);
+        $result = Helper\array_merge_recursive_distinct($array1, $array2, $array3, $array4);
 
         $this->assertEquals(
             [
@@ -126,7 +127,7 @@ class FunctionsTest extends TestCase
         $array1 = ['a' => 1, 2];
         $array2 = ['a' => 3, 4];
 
-        $result = \FOfX\GuzzleMiddleware\arrayMergeRecursiveDistinct($array1, $array2);
+        $result = Helper\array_merge_recursive_distinct($array1, $array2);
 
         $this->assertEquals(['a' => 3, 2, 4], $result);
     }

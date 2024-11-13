@@ -17,7 +17,7 @@ FOfX Guzzle Middleware is an enhanced Guzzle client with middleware, debugging, 
 
 ## Requirements
 
-- PHP 8.0 or higher
+- PHP 8.1 or higher
 - Guzzle 7.9 or higher
 
 ## Installation
@@ -55,13 +55,46 @@ $output = makeMiddlewareRequest('GET', 'https://www.example.com');
 printOutput($output);
 ```
 
-In each of these examples, the request and response middleware transaction details are stored in the `$output` array.
+In each of these examples, the request and response middleware transaction details are stored in the `$output` array. You can also `print_r()` this array instead of using `printOutput()`.
 
 ### Example Output
 
-Both examples above will produce similar output. Here's an example of what you might see. Escaping is by default true, this is without escaping:
+Both examples above will produce similar output. HTML escaping is by default true, but can be disabled.
+
+The example below prints the output using echo rather than Monolog, and does not escape HTML:
+
+```php
+require __DIR__ . '/vendor/autoload.php';
+
+use FOfX\GuzzleMiddleware;
+use FOfX\GuzzleMiddleware\MiddlewareClient;
+
+$escape    = false; // If false, printOutput will not escape HTML
+$useLogger = false; // If false, MiddlewareClient\printOutput will use echo instead of Monolog
+
+// Create a new MiddlewareClient instance
+$client = new MiddlewareClient();
+
+// Make a request
+$response = $client->makeRequest('GET', 'https://www.example.com');
+
+// Print the output (including request and response details)
+$client->printOutput(escape: $escape, useLogger: $useLogger);
+
+echo PHP_EOL . PHP_EOL;
+
+// Alternately, use the standalone functions makeMiddlewareRequest() and printOutput()
+$response = GuzzleMiddleware\makeMiddlewareRequest('GET', 'https://www.example.com');
+GuzzleMiddleware\printOutput(output: $response, escape: $escape);
+```
+
+The output should look like this:
 
 ```
+[2024-11-13T22:00:46.044290+00:00] guzzle-middleware.INFO: Starting request {"method":"GET","uri":"https://www.example.com"} []
+[2024-11-13T22:00:46.465925+00:00] guzzle-middleware.INFO: Request successful {"method":"GET","uri":"https://www.example.com","statusCode":200} []
+[2024-11-13T22:00:46.466491+00:00] guzzle-middleware.INFO: Request completed {"method":"GET","uri":"https://www.example.com","duration":0.4200778007507324} []
+--------------------------------------------------
 Request:
 --------------------------------------------------
   Method: GET
@@ -72,18 +105,6 @@ Request:
 {
     "Host": [
         "www.example.com"
-    ],
-    "User-Agent": [
-        "Mozilla/5.0 (X11; Linux x86_64)"
-    ],
-    "Accept-Language": [
-        "en-US,en;q=1.0"
-    ],
-    "Connection": [
-        "keep-alive"
-    ],
-    "Cache-Control": [
-        "no-cache"
     ]
 }
 --------------------------------------------------
@@ -96,7 +117,7 @@ Response:
 --------------------------------------------------
 {
     "Age": [
-        "192088"
+        "576428"
     ],
     "Cache-Control": [
         "max-age=604800"
@@ -105,19 +126,19 @@ Response:
         "text/html; charset=UTF-8"
     ],
     "Date": [
-        "Sat, 21 Sep 2024 10:54:59 GMT"
+        "Wed, 13 Nov 2024 22:00:46 GMT"
     ],
     "Etag": [
-        "\"3147526947+ident\""
+        "\"3147526947+gzip+ident\""
     ],
     "Expires": [
-        "Sat, 28 Sep 2024 10:54:59 GMT"
+        "Wed, 20 Nov 2024 22:00:46 GMT"
     ],
     "Last-Modified": [
         "Thu, 17 Oct 2019 07:18:26 GMT"
     ],
     "Server": [
-        "ECAcc (nyd/D14F)"
+        "ECAcc (nyd/D18F)"
     ],
     "Vary": [
         "Accept-Encoding"
@@ -146,7 +167,7 @@ Response:
         margin: 0;
         padding: 0;
         font-family: -apple-system, system-ui, BlinkMacSystemFont, "Segoe UI", "Open Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
-        
+
     }
     div {
         width: 600px;
@@ -166,7 +187,7 @@ Response:
             width: auto;
         }
     }
-    </style>    
+    </style>
 </head>
 
 <body>
@@ -176,32 +197,164 @@ Response:
 --------------------------------------------------
 Debug Info:
 --------------------------------------------------
+* Host www.example.com:443 was resolved.
+* IPv6: 2606:2800:21f:cb07:6820:80da:af6b:8b2c
+* IPv4: 93.184.215.14
 *   Trying 93.184.215.14:443...
-* Connected to www.example.com (93.184.215.14) port 443 (#0)
-* ALPN, offering http/1.1
-* successfully set certificate verify locations:
+* Connected to www.example.com (93.184.215.14) port 443
+* ALPN: curl offers http/1.1
 *  CAfile: C:\laragon\etc\ssl\cacert.pem
 *  CApath: none
-* SSL connection using TLSv1.3 / TLS_AES_256_GCM_SHA384
-* ALPN, server accepted to use http/1.1
+* SSL connection using TLSv1.3 / TLS_AES_256_GCM_SHA384 / prime256v1 / RSASSA-PSS
+* ALPN: server accepted http/1.1
 * Server certificate:
-*  subject: C=US; ST=California; L=Los Angeles; O=Internet Corporation for Assigned Names and Numbers; CN=www.example.org
+*  subject: C=US; ST=California; L=Los Angeles; O=InternetCorporationforAssignedNamesandNumbers; CN=www.example.org
 *  start date: Jan 30 00:00:00 2024 GMT
 *  expire date: Mar  1 23:59:59 2025 GMT
 *  subjectAltName: host "www.example.com" matched cert's "www.example.com"
 *  issuer: C=US; O=DigiCert Inc; CN=DigiCert Global G2 TLS RSA SHA256 2020 CA1
 *  SSL certificate verify ok.
-> GET / HTTP/1.1
-Host: www.example.com
-User-Agent: Mozilla/5.0 (X11; Linux x86_64)
-Accept-Language: en-US,en;q=1.0
-Connection: keep-alive
-Cache-Control: no-cache
+*   Certificate level 0: Public key type RSA (2048/112 Bits/secBits), signed using sha256WithRSAEncryption
+*   Certificate level 1: Public key type RSA (2048/112 Bits/secBits), signed using sh... [TRUNCATED]
+--------------------------------------------------
 
-* old SSL session ID is stale, removing
-* Mark bundle as not supporting multiuse
-< HTTP/1.1 200 OK
-... [TRUNCATED]
+[2024-11-13T22:00:46.469277+00:00] guzzle-middleware.INFO: Starting request {"method":"GET","uri":"https://www.example.com"} []
+[2024-11-13T22:00:46.878952+00:00] guzzle-middleware.INFO: Request successful {"method":"GET","uri":"https://www.example.com","statusCode":200} []
+[2024-11-13T22:00:46.879515+00:00] guzzle-middleware.INFO: Request completed {"method":"GET","uri":"https://www.example.com","duration":0.4095311164855957} []
+--------------------------------------------------
+Request:
+--------------------------------------------------
+  Method: GET
+  URL: https://www.example.com
+--------------------------------------------------
+  Headers:
+--------------------------------------------------
+{
+    "Host": [
+        "www.example.com"
+    ],
+    "User-Agent": [
+        "Guzzle (Windows NT 10.0; AMD64)"
+    ],
+    "Accept-Language": [
+        "en-US,en;q=1.0"
+    ],
+    "Connection": [
+        "keep-alive"
+    ],
+    "Cache-Control": [
+        "no-cache"
+    ]
+}
+--------------------------------------------------
+--------------------------------------------------
+Response:
+--------------------------------------------------
+  Status Code: 200
+--------------------------------------------------
+  Headers:
+--------------------------------------------------
+{
+    "Age": [
+        "530273"
+    ],
+    "Cache-Control": [
+        "max-age=604800"
+    ],
+    "Content-Type": [
+        "text/html; charset=UTF-8"
+    ],
+    "Date": [
+        "Wed, 13 Nov 2024 22:00:47 GMT"
+    ],
+    "Etag": [
+        "\"3147526947+gzip+ident\""
+    ],
+    "Expires": [
+        "Wed, 20 Nov 2024 22:00:47 GMT"
+    ],
+    "Last-Modified": [
+        "Thu, 17 Oct 2019 07:18:26 GMT"
+    ],
+    "Server": [
+        "ECAcc (nyd/D16F)"
+    ],
+    "Vary": [
+        "Accept-Encoding"
+    ],
+    "X-Cache": [
+        "HIT"
+    ],
+    "Content-Length": [
+        "1256"
+    ]
+}
+--------------------------------------------------
+  Body:
+--------------------------------------------------
+<!doctype html>
+<html>
+<head>
+    <title>Example Domain</title>
+
+    <meta charset="utf-8" />
+    <meta http-equiv="Content-type" content="text/html; charset=utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style type="text/css">
+    body {
+        background-color: #f0f0f2;
+        margin: 0;
+        padding: 0;
+        font-family: -apple-system, system-ui, BlinkMacSystemFont, "Segoe UI", "Open Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+
+    }
+    div {
+        width: 600px;
+        margin: 5em auto;
+        padding: 2em;
+        background-color: #fdfdff;
+        border-radius: 0.5em;
+        box-shadow: 2px 3px 7px 2px rgba(0,0,0,0.02);
+    }
+    a:link, a:visited {
+        color: #38488f;
+        text-decoration: none;
+    }
+    @media (max-width: 700px) {
+        div {
+            margin: 0 auto;
+            width: auto;
+        }
+    }
+    </style>
+</head>
+
+<body>
+<div>
+    <h1>Example Domain</h1>
+    <p>This domai... [TRUNCATED]
+--------------------------------------------------
+Debug Info:
+--------------------------------------------------
+* Host www.example.com:443 was resolved.
+* IPv6: 2606:2800:21f:cb07:6820:80da:af6b:8b2c
+* IPv4: 93.184.215.14
+*   Trying 93.184.215.14:443...
+* Connected to www.example.com (93.184.215.14) port 443
+* ALPN: curl offers http/1.1
+*  CAfile: C:\laragon\etc\ssl\cacert.pem
+*  CApath: none
+* SSL connection using TLSv1.3 / TLS_AES_256_GCM_SHA384 / prime256v1 / RSASSA-PSS
+* ALPN: server accepted http/1.1
+* Server certificate:
+*  subject: C=US; ST=California; L=Los Angeles; O=InternetCorporationforAssignedNamesandNumbers; CN=www.example.org
+*  start date: Jan 30 00:00:00 2024 GMT
+*  expire date: Mar  1 23:59:59 2025 GMT
+*  subjectAltName: host "www.example.com" matched cert's "www.example.com"
+*  issuer: C=US; O=DigiCert Inc; CN=DigiCert Global G2 TLS RSA SHA256 2020 CA1
+*  SSL certificate verify ok.
+*   Certificate level 0: Public key type RSA (2048/112 Bits/secBits), signed using sha256WithRSAEncryption
+*   Certificate level 1: Public key type RSA (2048/112 Bits/secBits), signed using sh... [TRUNCATED]
 --------------------------------------------------
 ```
 
@@ -211,7 +364,7 @@ To use a proxy with the MiddlewareClient:
 
 ```php
 $proxyConfig = ['proxy' => 'http://proxy.example.com:8080'];
-$client = new MiddlewareClient([], null, $proxyConfig);
+$client = new MiddlewareClient(proxyConfig: $proxyConfig);
 ```
 
 ## Configuration Options
@@ -219,7 +372,7 @@ $client = new MiddlewareClient([], null, $proxyConfig);
 The `MiddlewareClient` constructor accepts the following parameters:
 
 - `$config` (array): Guzzle configuration options
-- `$logger` (LoggerInterface): A PSR-3 compatible logger instance
+- `$logger` (Logger): A Monolog Logger instance
 - `$proxyConfig` (array): Proxy configuration options
 
 ## Testing

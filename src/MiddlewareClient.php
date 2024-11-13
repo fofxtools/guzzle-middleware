@@ -33,6 +33,7 @@ use GuzzleHttp\Psr7\HttpFactory;
 use Monolog\Logger;
 use Monolog\Handler\StreamHandler;
 use Monolog\Level;
+use FOfX\Helper;
 
 /**
  * Class MiddlewareClient
@@ -91,7 +92,7 @@ class MiddlewareClient
         $this->stack->push(Middleware::history($this->container));
 
         // Merge default configuration with any proxy settings and passed config
-        $config            = arrayMergeRecursiveDistinct($this->getDefaultConfig($proxyConfig), $config);
+        $config            = Helper\array_merge_recursive_distinct($this->getDefaultConfig($proxyConfig), $config);
         $config['handler'] = $this->stack;
 
         // Initialize the request factory
@@ -160,7 +161,7 @@ class MiddlewareClient
         $debugStream = fopen('php://temp', 'r+');
 
         // Merge default and passed options
-        $options = arrayMergeRecursiveDistinct([
+        $options = Helper\array_merge_recursive_distinct([
             'debug' => $debugStream,
         ], $options);
 
@@ -337,12 +338,12 @@ class MiddlewareClient
                 'debug' => $this->debug[(string) $request->getUri()] ?? null,
             ];
 
-            $this->logger->info('Output retrieved', [
+            $this->logger->debug('Output retrieved', [
                 'transactionCount' => count($this->container),
                 'latestStatusCode' => $output[0]['response']['statusCode'],
             ]);
         } else {
-            $this->logger->warning('No output available');
+            $this->logger->debug('No output available');
         }
 
         return $output;
