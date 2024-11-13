@@ -29,8 +29,7 @@
     },
     "autoload-dev": {
         "psr-4": {
-            "FOfX\\GuzzleMiddleware\\Tests\\": "tests/",
-            "FOfX\\GuzzleMiddleware\\Tests\\Support\\": "tests/Support/"
+            "FOfX\\GuzzleMiddleware\\Tests\\": "tests/"
         }
     },
     "scripts": {
