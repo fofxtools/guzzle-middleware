@@ -35,12 +35,15 @@ composer require fofx/guzzle-middleware
 Here's a simple example of how to use the `MiddlewareClient`:
 
 ```php
+require __DIR__ . '/vendor/autoload.php';
+
+use FOfX\GuzzleMiddleware;
 use FOfX\GuzzleMiddleware\MiddlewareClient;
 
 $client = new MiddlewareClient();
 $response = $client->makeRequest('GET', 'https://www.example.com');
 $output = $client->getOutput();
-printOutput($output);
+GuzzleMiddleware\printOutput($output);
 ```
 
 ### Using the `makeMiddlewareRequest` Function
@@ -48,11 +51,12 @@ printOutput($output);
 Alternatively, you can use the `makeMiddlewareRequest` function for a more streamlined approach:
 
 ```php
-use function FOfX\GuzzleMiddleware\makeMiddlewareRequest;
-use function FOfX\GuzzleMiddleware\printOutput;
+require __DIR__ . '/vendor/autoload.php';
 
-$output = makeMiddlewareRequest('GET', 'https://www.example.com');
-printOutput($output);
+use FOfX\GuzzleMiddleware;
+
+$output = GuzzleMiddleware\makeMiddlewareRequest('GET', 'https://www.example.com');
+GuzzleMiddleware\printOutput($output);
 ```
 
 In each of these examples, the request and response middleware transaction details are stored in the `$output` array. You can also `print_r()` this array instead of using `printOutput()`.
@@ -61,19 +65,30 @@ In each of these examples, the request and response middleware transaction detai
 
 Both examples above will produce similar output. HTML escaping is by default true, but can be disabled.
 
-The example below prints the output using echo rather than Monolog, and does not escape HTML:
+The example below creates a Monolog logger and sets it to use stdout. See [examples/monolog-stdout.php](examples/monolog-stdout.php).
+
+However it prints the output using echo rather than the logger, and does not escape HTML:
 
 ```php
-require __DIR__ . '/vendor/autoload.php';
+require __DIR__ . 'vendor/autoload.php';
 
 use FOfX\GuzzleMiddleware;
 use FOfX\GuzzleMiddleware\MiddlewareClient;
+use Monolog\Logger;
+use Monolog\Handler\StreamHandler;
+use Monolog\Level;
+
+$logger = new Logger('guzzle-middleware');
+$logger->pushHandler(new StreamHandler('php://stdout', Level::Info));
 
 $escape    = false; // If false, printOutput will not escape HTML
-$useLogger = false; // If false, MiddlewareClient\printOutput will use echo instead of Monolog
+$useLogger = false; // If false, MiddlewareClient\printOutput will use echo instead of the logger
+if (!$useLogger) {
+    $logger = null;
+}
 
 // Create a new MiddlewareClient instance
-$client = new MiddlewareClient();
+$client = new MiddlewareClient([], $logger);
 
 // Make a request
 $response = $client->makeRequest('GET', 'https://www.example.com');
@@ -84,8 +99,8 @@ $client->printOutput(escape: $escape, useLogger: $useLogger);
 echo PHP_EOL . PHP_EOL;
 
 // Alternately, use the standalone functions makeMiddlewareRequest() and printOutput()
-$response = GuzzleMiddleware\makeMiddlewareRequest('GET', 'https://www.example.com');
-GuzzleMiddleware\printOutput(output: $response, escape: $escape);
+$response = GuzzleMiddleware\makeMiddlewareRequest('GET', 'https://www.example.com', [], [], $logger);
+GuzzleMiddleware\printOutput(output: $response, escape: $escape, logger: $logger);
 ```
 
 The output should look like this:
@@ -372,7 +387,7 @@ $client = new MiddlewareClient(proxyConfig: $proxyConfig);
 The `MiddlewareClient` constructor accepts the following parameters:
 
 - `$config` (array): Guzzle configuration options
-- `$logger` (Logger): A Monolog Logger instance
+- `$logger` (LoggerInterface): A PSR-3 compatible logger
 - `$proxyConfig` (array): Proxy configuration options
 
 ## Testing

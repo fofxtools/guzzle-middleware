@@ -6,28 +6,33 @@ require __DIR__ . '/../vendor/autoload.php';
 
 use FOfX\GuzzleMiddleware;
 use FOfX\GuzzleMiddleware\MiddlewareClient;
-use Psr\Log\NullLogger;
+use Monolog\Logger;
+use Monolog\Handler\StreamHandler;
+use Monolog\Level;
 
-// Optionally create a logger instance
-// For logging, you'll need a PSR-3 compatible logger like:
-// - Monolog (composer require monolog/monolog)
-// - Your framework's logger (e.g. Laravel's Log)
-// Or use NullLogger for no logging:
-$logger    = new NullLogger();
+// Create a Monolog logger that writes to a file
+$logger = new Logger('guzzle-middleware');
+// Create logs directory if it doesn't exist
+$logsDir = __DIR__ . '/../logs';
+if (!is_dir($logsDir)) {
+    mkdir($logsDir, 0755, true);
+}
+$logger->pushHandler(new StreamHandler($logsDir . '/guzzle-middleware.log', Level::Info));
+
 $escape    = false; // If false, printOutput will not escape HTML
-$useLogger = false; // If false, MiddlewareClient\printOutput will use echo instead of the logger
-/** @phpstan-ignore-next-line */
+$useLogger = true;  // If true, use the logger instead of echo
 if (!$useLogger) {
     $logger = null;
 }
 
-// Create a new MiddlewareClient instance
+// Create a new MiddlewareClient instance with the logger
 $client = new MiddlewareClient([], $logger);
 
 // Make a request
 $response = $client->makeRequest('GET', 'https://www.example.com');
 
 // Print the output (including request and response details)
+// This will write to the log file instead of echoing
 $client->printOutput(escape: $escape, useLogger: $useLogger);
 
 echo PHP_EOL . PHP_EOL;
@@ -36,3 +41,6 @@ echo PHP_EOL . PHP_EOL;
 // The makeMiddlewareRequest() function will add a user agent to the request
 $response = GuzzleMiddleware\makeMiddlewareRequest('GET', 'https://www.example.com', [], [], $logger);
 GuzzleMiddleware\printOutput(output: $response, escape: $escape, logger: $logger);
+
+// The log file will contain the request/response details
+// Check logs/guzzle-middleware.log

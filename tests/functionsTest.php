@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace FOfX\GuzzleMiddleware\Tests;
 
 use PHPUnit\Framework\TestCase;

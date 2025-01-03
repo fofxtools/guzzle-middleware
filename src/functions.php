@@ -26,7 +26,7 @@ declare(strict_types=1);
 
 namespace FOfX\GuzzleMiddleware;
 
-use Monolog\Logger;
+use Psr\Log\LoggerInterface;
 use FOfX\Helper;
 
 /**
@@ -119,12 +119,12 @@ function createGuzzleOptions(bool $rotateUserAgent = false): array
 /**
  * Helper function to print the output from MiddlewareClient or makeMiddlewareRequest
  *
- * @param array   $output    The output array
- * @param bool    $truncate  Whether to truncate long outputs (default: true)
- * @param int     $maxLength Maximum length of truncation (default: 1000)
- * @param bool    $escape    Whether to apply htmlspecialchars to sanitize output (default: true)
- * @param string  $divider   The divider string to separate sections (default: 50 dashes if null)
- * @param ?Logger $logger    Monolog Logger instance
+ * @param array            $output    The output array
+ * @param bool             $truncate  Whether to truncate long outputs (default: true)
+ * @param int              $maxLength Maximum length of truncation (default: 1000)
+ * @param bool             $escape    Whether to apply htmlspecialchars to sanitize output (default: true)
+ * @param string           $divider   The divider string to separate sections (default: 50 dashes if null)
+ * @param ?LoggerInterface $logger    PSR-3 Logger instance
  */
 function printOutput(
     array $output,
@@ -132,7 +132,7 @@ function printOutput(
     int $maxLength = 1000,
     bool $escape = true,
     string $divider = null,
-    ?Logger $logger = null
+    ?LoggerInterface $logger = null
 ): void {
     // Set the default divider if it's null
     if ($divider === null) {
@@ -260,7 +260,7 @@ function printOutput(
 /**
  * Make a request using the MiddlewareClient.
  *
- * Note on the logger parameter: In PHP, when an object (like a Monolog Logger
+ * Note on the logger parameter: In PHP, when an object (like a PSR-3 Logger
  * implementation) is passed to a function, the function receives a copy of the
  * object handle, not a copy of the object itself. This means that while the
  * function can't reassign the caller's original variable, it can interact with
@@ -270,12 +270,12 @@ function printOutput(
  * MiddlewareClient will be reflected in the original logger object,
  * potentially adding new log entries to it.
  *
- * @param string  $method          HTTP method
- * @param string  $uri             URI for the request
- * @param array   $config          Guzzle configuration
- * @param array   $options         Request options
- * @param ?Logger $logger          Monolog Logger instance
- * @param bool    $rotateUserAgent Whether to rotate user agents
+ * @param string           $method          HTTP method
+ * @param string           $uri             URI for the request
+ * @param array            $config          Guzzle configuration
+ * @param array            $options         Request options
+ * @param ?LoggerInterface $logger          PSR-3 Logger instance
+ * @param bool             $rotateUserAgent Whether to rotate user agents
  *
  * @throws \GuzzleHttp\Exception\GuzzleException
  *
@@ -289,7 +289,7 @@ function makeMiddlewareRequest(
     string $uri,
     array $config = [],
     array $options = [],
-    ?Logger $logger = null,
+    ?LoggerInterface $logger = null,
     bool $rotateUserAgent = false
 ): array {
     $config  = Helper\array_merge_recursive_distinct(createGuzzleConfig(), $config);

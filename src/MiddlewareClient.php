@@ -30,9 +30,8 @@ use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\RequestFactoryInterface;
 use GuzzleHttp\Psr7\HttpFactory;
-use Monolog\Logger;
-use Monolog\Handler\StreamHandler;
-use Monolog\Level;
+use Psr\Log\LoggerInterface;
+use Psr\Log\NullLogger;
 use FOfX\Helper;
 
 /**
@@ -44,15 +43,12 @@ use FOfX\Helper;
  * Basic usage example:
  * ```php
  * use FOfX\GuzzleMiddleware\MiddlewareClient;
- * use Monolog\Logger;
- * use Monolog\Handler\StreamHandler;
- * use Monolog\Level;
+ * use Psr\Log\LoggerInterface;
  *
  * // Create a new MiddlewareClient instance
- * $client = new MiddlewareClient();  // Uses default Monolog logger
- * // Or with custom file logger:
- * $customLogger = new Logger('guzzle-middleware');
- * $customLogger->pushHandler(new StreamHandler(__DIR__ . '/guzzle-middleware.log', Level::Info));
+ * $client = new MiddlewareClient();  // Uses default PSR-3 NullLogger
+ * // Or with custom logger:
+ * $customLogger = YourPsrLogger::create(); // Any PSR-3 compatible logger
  * $client = new MiddlewareClient([], $customLogger);
  *
  * // Make a request
@@ -71,7 +67,7 @@ class MiddlewareClient
     private array                       $debug     = [];
     private array                       $container = [];
     private HandlerStack                $stack;
-    private Logger                      $logger;
+    private LoggerInterface             $logger;
     private RequestFactoryInterface     $requestFactory;
 
     /**
@@ -79,16 +75,14 @@ class MiddlewareClient
      *
      * Initializes the Guzzle client with middleware for transaction history logging.
      *
-     * @param array      $config      optional Guzzle configuration array
-     * @param ?Logger    $logger      optional Monolog Logger instance
-     * @param array|null $proxyConfig optional proxy settings
+     * @param array            $config      optional Guzzle configuration array
+     * @param ?LoggerInterface $logger      optional PSR-3 Logger instance
+     * @param array|null       $proxyConfig optional proxy settings
      */
-    public function __construct(array $config = [], ?Logger $logger = null, ?array $proxyConfig = null)
+    public function __construct(array $config = [], ?LoggerInterface $logger = null, ?array $proxyConfig = null)
     {
-        $this->logger = $logger ?? new Logger('guzzle-middleware', [
-            new StreamHandler('php://stdout', Level::Info),
-        ]);
-        $this->stack = $config['handler'] ?? HandlerStack::create();
+        $this->logger = $logger ?? new NullLogger();
+        $this->stack  = $config['handler'] ?? HandlerStack::create();
         $this->stack->push(Middleware::history($this->container));
 
         // Merge default configuration with any proxy settings and passed config

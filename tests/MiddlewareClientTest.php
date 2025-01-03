@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace FOfX\GuzzleMiddleware\Tests;
 
 use FOfX\GuzzleMiddleware\MiddlewareClient;
@@ -279,5 +281,23 @@ class MiddlewareClientTest extends TestCase
             $this->testHandler->hasRecordThatContains('Request/Response Details', Level::Info),
             'Unexpected log record found'
         );
+    }
+
+    public function testWorksWithPsr3Logger(): void
+    {
+        $logger = new TestLogger();
+        $this->mockHandler->append(new Response(200, [], 'Hello World'));
+
+        $client = new MiddlewareClient(['handler' => $this->handlerStack], $logger);
+        $client->makeRequest('GET', 'http://example.com');
+
+        $this->assertNotEmpty($logger->logs);
+        $this->assertSame('debug', $logger->logs[0]['level']);
+        $this->assertSame('MiddlewareClient initialized', $logger->logs[0]['message']);
+
+        // Check for the request log
+        $requestLog = array_filter($logger->logs, fn ($log) => $log['message'] === 'Starting request');
+        $this->assertNotEmpty($requestLog, 'No request log found');
+        $this->assertSame('info', reset($requestLog)['level']);
     }
 }
