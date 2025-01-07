@@ -1,7 +1,7 @@
-# Test Client Design Document
+# Development Client Design Document
 
 ## Purpose
-Create an automated test client to demonstrate and verify GuzzleMiddleware's capabilities, focusing on:
+Create a development client to demonstrate and verify GuzzleMiddleware's capabilities, focusing on:
 - Multiple transaction handling (redirects)
 - Logging functionality 
 - Debugging output
@@ -15,22 +15,22 @@ Create an automated test client to demonstrate and verify GuzzleMiddleware's cap
 - `printOutput()` - Function for output formatting
 - Monolog integration for logging
 
-### Test Client Architecture
+### Development Client Architecture
 
 #### File Structure
 ```
-test-client/
+dev-client/
 ├── src/
-│   ├── TestClient.php          # Main test client implementation
-│   ├── TestServer.php          # Local test server implementation
-│   └── Scenarios/             # Test scenario implementations
+│   ├── DevClient.php         # Main development client implementation
+│   ├── DevServer.php         # Local development server implementation
+│   └── Scenarios/            # Development scenario implementations
 ├── public/
-│   ├── index.php              # Router for test endpoints
-│   ├── redirect.php           # Redirect endpoint handler
+│   ├── index.php             # Router for development endpoints
+│   ├── redirect.php          # Redirect endpoint handler
 │   └── error.php             # Error scenario handler
 ├── config/
-│   └── test-endpoints.php     # Local endpoint configurations
-└── run.php                    # CLI entry point
+│   └── dev-endpoints.php     # Local endpoint configurations
+└── run.php                   # CLI entry point
 ```
 
 ### Test Scenarios
@@ -56,7 +56,7 @@ $client->makeRequest('GET', 'http://localhost:8080/error/500');  // 500 error
 $client->makeRequest('GET', 'http://localhost:8080/timeout');    // Timeout simulation
 ```
 
-### Local Test Server
+### Local Development Server
 - Built-in PHP development server
 - Configurable endpoints for different scenarios
 - Controlled environment for testing
@@ -65,7 +65,7 @@ $client->makeRequest('GET', 'http://localhost:8080/timeout');    // Timeout simu
 ### Implementation Phases
 
 #### Phase 1: Core Functionality
-- Local test server setup
+- Local development server setup
 - Basic request execution
 - Redirect handling
 - Transaction logging
@@ -91,16 +91,16 @@ $client->makeRequest('GET', 'http://localhost:8080/timeout');    // Timeout simu
 
 ### Usage Example
 ```php
-// Start local test server
-$server = new TestServer();
+// Start local development server
+$server = new DevServer();
 $server->start();
 
-// Run tests
-$client = new TestClient();
-$client->runAllTests();
+// Run scenarios
+$client = new DevClient();
+$client->runAllScenarios();
 
 // Specific scenario
-$client->runRedirectTests();
+$client->runRedirectScenario();
 
 // Stop server
 $server->stop();

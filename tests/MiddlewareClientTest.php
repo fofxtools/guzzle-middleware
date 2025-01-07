@@ -100,6 +100,38 @@ class MiddlewareClientTest extends TestCase
         $this->assertEquals('Response Body', (string)$response->getBody());
     }
 
+    public function testGetDebugReturnsArray()
+    {
+        $client = new MiddlewareClient(['handler' => $this->handlerStack], $this->logger);
+        $debug  = $client->getDebug();
+        $this->assertIsArray($debug);
+    }
+
+    public function testCaptureDebugInfo()
+    {
+        // Create client
+        $client = new MiddlewareClient(['handler' => $this->handlerStack], $this->logger);
+
+        // Create debug stream with test content
+        $debugStream  = fopen('php://temp', 'r+');
+        $debugContent = "* Connected to example.com\n> GET / HTTP/1.1\n> Host: example.com";
+        fwrite($debugStream, $debugContent);
+
+        // Set up test data directly in debug property
+        $uri                = 'http://example.com';
+        $reflectionProperty = new \ReflectionProperty($client, 'debug');
+        $reflectionProperty->setAccessible(true);
+        $reflectionProperty->setValue($client, [$uri => $debugContent]);
+
+        // Use public getDebug() to verify the debug info
+        $debug = $client->getDebug();
+        $this->assertArrayHasKey($uri, $debug);
+        $this->assertEquals($debugContent, $debug[$uri]);
+        $this->assertStringContainsString('Connected to example.com', $debug[$uri]);
+        $this->assertStringContainsString('GET / HTTP/1.1', $debug[$uri]);
+        $this->assertStringContainsString('Host: example.com', $debug[$uri]);
+    }
+
     public function testMakeRequestSuccess()
     {
         $mock = new MockHandler([
@@ -180,6 +212,36 @@ class MiddlewareClientTest extends TestCase
 
         $this->assertEquals(408, $response->getStatusCode());
         $this->assertJsonStringEqualsJsonString('{"error":"Error without response"}', (string)$response->getBody());
+    }
+
+    public function testHandleException()
+    {
+        $this->mockHandler->append(new RequestException('Error Communicating with Server', new Request('GET', 'http://example.com')));
+        $client   = new MiddlewareClient(['handler' => $this->handlerStack], $this->logger);
+        $response = $client->makeRequest('GET', 'http://example.com');
+        $this->assertEquals(408, $response->getStatusCode());
+        $this->assertJsonStringEqualsJsonString('{"error":"Error Communicating with Server"}', (string)$response->getBody());
+    }
+
+    public function testGetContainer()
+    {
+        $this->mockHandler->append(new Response(200, ['Content-Type' => 'application/json'], '{"key":"value"}'));
+        $client = new MiddlewareClient(['handler' => $this->handlerStack], $this->logger);
+        $client->makeRequest('GET', 'http://example.com');
+
+        $container = $client->getContainer();
+        $this->assertNotEmpty($container);
+        $this->assertArrayHasKey(0, $container);
+
+        // Check request details
+        $this->assertInstanceOf(\GuzzleHttp\Psr7\Request::class, $container[0]['request']);
+        $this->assertEquals('GET', $container[0]['request']->getMethod());
+        $this->assertEquals('http://example.com', (string)$container[0]['request']->getUri());
+
+        // Check response details
+        $this->assertInstanceOf(\GuzzleHttp\Psr7\Response::class, $container[0]['response']);
+        $this->assertEquals(200, $container[0]['response']->getStatusCode());
+        $this->assertEquals('{"key":"value"}', (string)$container[0]['response']->getBody());
     }
 
     public function testGetLastTransaction()

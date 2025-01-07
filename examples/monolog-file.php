@@ -31,9 +31,9 @@ $client = new MiddlewareClient([], $logger);
 // Make a request
 $response = $client->makeRequest('GET', 'https://www.example.com');
 
-// Print the output (including request and response details)
+// Print the transactions (including request and response details)
 // This will write to the log file instead of echoing
-$client->printOutput(escape: $escape, useLogger: $useLogger);
+$client->printAllTransactions(escape: $escape, useLogger: $useLogger);
 
 echo PHP_EOL . PHP_EOL;
 

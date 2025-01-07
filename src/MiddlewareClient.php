@@ -150,6 +150,41 @@ class MiddlewareClient
     }
 
     /**
+     * Get the debug information.
+     *
+     * @return array the debug information
+     */
+    public function getDebug(): array
+    {
+        return $this->debug;
+    }
+
+    /**
+     * Capture debug information from the debug stream.
+     *
+     * @param resource $debugStream stream capturing debug data
+     * @param string   $uri         the request URI
+     */
+    private function captureDebugInfo($debugStream, string $uri): void
+    {
+        if (!is_resource($debugStream)) {
+            $this->logger->warning('Invalid debug stream for URI: ' . $uri);
+
+            return;
+        }
+
+        rewind($debugStream);
+        $debugContent = stream_get_contents($debugStream);
+        if ($debugContent !== false) {
+            $this->debug[$uri] = $debugContent;
+            $this->logger->debug('Debug info captured for URI: ' . $uri, ['debugLength' => strlen($debugContent)]);
+        } else {
+            $this->logger->warning('Failed to read debug stream for URI: ' . $uri);
+        }
+        fclose($debugStream);
+    }
+
+    /**
      * Send an HTTP request with optional custom headers and body.
      *
      * @param string $method  HTTP method (e.g., 'GET', 'POST').
@@ -270,28 +305,13 @@ class MiddlewareClient
     }
 
     /**
-     * Capture debug information from the debug stream.
+     * Get the container of transactions.
      *
-     * @param resource $debugStream stream capturing debug data
-     * @param string   $uri         the request URI
+     * @return array the container of transactions
      */
-    private function captureDebugInfo($debugStream, string $uri): void
+    public function getContainer(): array
     {
-        if (!is_resource($debugStream)) {
-            $this->logger->warning('Invalid debug stream for URI: ' . $uri);
-
-            return;
-        }
-
-        rewind($debugStream);
-        $debugContent = stream_get_contents($debugStream);
-        if ($debugContent !== false) {
-            $this->debug[$uri] = $debugContent;
-            $this->logger->debug('Debug info captured for URI: ' . $uri, ['debugLength' => strlen($debugContent)]);
-        } else {
-            $this->logger->warning('Failed to read debug stream for URI: ' . $uri);
-        }
-        fclose($debugStream);
+        return $this->container;
     }
 
     /**
