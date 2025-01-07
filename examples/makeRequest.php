@@ -16,5 +16,6 @@ $client = new MiddlewareClient([], $logger);
 // Make a request
 $response = $client->makeRequest('GET', 'https://www.example.com');
 
-// Print the container
+// Print the container and debug info
 print_r($client->getContainer());
+print_r($client->getDebug());

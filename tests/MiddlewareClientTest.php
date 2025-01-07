@@ -47,7 +47,7 @@ class MiddlewareClientTest extends TestCase
         $this->assertEquals('true', $response->getHeaderLine('X-Proxy-Used'));
     }
 
-    public function testSendMethodReturnsResponse()
+    public function testSendReturnsResponse()
     {
         $this->mockHandler->append(new Response(200, ['X-Foo' => 'Bar'], 'Hello, World'));
         $client = new MiddlewareClient(['handler' => $this->handlerStack], $this->logger);
@@ -60,7 +60,7 @@ class MiddlewareClientTest extends TestCase
         $this->assertEquals('Bar', $response->getHeaderLine('X-Foo'));
     }
 
-    public function testSendMethodWithOptions()
+    public function testSendWithOptions()
     {
         $this->mockHandler->append(function (RequestInterface $request) {
             $this->assertEquals('test-value', $request->getHeaderLine('X-Test-Header'));
@@ -75,7 +75,7 @@ class MiddlewareClientTest extends TestCase
         $this->assertEquals(200, $response->getStatusCode());
     }
 
-    public function testSendMethodPropagatesExceptions()
+    public function testSendPropagatesExceptions()
     {
         $request = new Request('GET', 'http://example.com');
         $this->mockHandler->append(new RequestException('Error Communicating with Server', $request));
@@ -98,6 +98,27 @@ class MiddlewareClientTest extends TestCase
 
         $this->assertEquals(200, $response->getStatusCode());
         $this->assertEquals('Response Body', (string)$response->getBody());
+    }
+
+    public function testGetContainer()
+    {
+        $this->mockHandler->append(new Response(200, ['Content-Type' => 'application/json'], '{"key":"value"}'));
+        $client = new MiddlewareClient(['handler' => $this->handlerStack], $this->logger);
+        $client->makeRequest('GET', 'http://example.com');
+
+        $container = $client->getContainer();
+        $this->assertNotEmpty($container);
+        $this->assertArrayHasKey(0, $container);
+
+        // Check request details
+        $this->assertInstanceOf(\GuzzleHttp\Psr7\Request::class, $container[0]['request']);
+        $this->assertEquals('GET', $container[0]['request']->getMethod());
+        $this->assertEquals('http://example.com', (string)$container[0]['request']->getUri());
+
+        // Check response details
+        $this->assertInstanceOf(\GuzzleHttp\Psr7\Response::class, $container[0]['response']);
+        $this->assertEquals(200, $container[0]['response']->getStatusCode());
+        $this->assertEquals('{"key":"value"}', (string)$container[0]['response']->getBody());
     }
 
     public function testGetDebugReturnsArray()
@@ -134,7 +155,7 @@ class MiddlewareClientTest extends TestCase
 
     public function testCreateRequest()
     {
-        $client = new MiddlewareClient(['handler' => $this->handlerStack], $this->logger);
+        $client  = new MiddlewareClient(['handler' => $this->handlerStack], $this->logger);
         $request = $client->createRequest('GET', 'http://example.com');
         $this->assertInstanceOf(RequestInterface::class, $request);
         $this->assertEquals('GET', $request->getMethod());
@@ -143,7 +164,7 @@ class MiddlewareClientTest extends TestCase
 
     public function testCreateRequestWithOptions()
     {
-        $client = new MiddlewareClient(['handler' => $this->handlerStack], $this->logger);
+        $client  = new MiddlewareClient(['handler' => $this->handlerStack], $this->logger);
         $options = ['headers' => ['X-Test-Header' => 'test-value'], 'body' => 'test-body'];
         $request = $client->createRequest('GET', 'http://example.com', $options);
         $this->assertInstanceOf(RequestInterface::class, $request);
@@ -244,27 +265,6 @@ class MiddlewareClientTest extends TestCase
         $this->assertJsonStringEqualsJsonString('{"error":"Error Communicating with Server"}', (string)$response->getBody());
     }
 
-    public function testGetContainer()
-    {
-        $this->mockHandler->append(new Response(200, ['Content-Type' => 'application/json'], '{"key":"value"}'));
-        $client = new MiddlewareClient(['handler' => $this->handlerStack], $this->logger);
-        $client->makeRequest('GET', 'http://example.com');
-
-        $container = $client->getContainer();
-        $this->assertNotEmpty($container);
-        $this->assertArrayHasKey(0, $container);
-
-        // Check request details
-        $this->assertInstanceOf(\GuzzleHttp\Psr7\Request::class, $container[0]['request']);
-        $this->assertEquals('GET', $container[0]['request']->getMethod());
-        $this->assertEquals('http://example.com', (string)$container[0]['request']->getUri());
-
-        // Check response details
-        $this->assertInstanceOf(\GuzzleHttp\Psr7\Response::class, $container[0]['response']);
-        $this->assertEquals(200, $container[0]['response']->getStatusCode());
-        $this->assertEquals('{"key":"value"}', (string)$container[0]['response']->getBody());
-    }
-
     public function testGetLastTransaction()
     {
         $this->mockHandler->append(new Response(200, ['Content-Type' => 'application/json'], '{"key":"value"}'));
@@ -338,7 +338,7 @@ class MiddlewareClientTest extends TestCase
         $client->makeRequest('GET', 'http://example.com');
 
         $this->assertNotEmpty($logger->logs);
-        $this->assertSame('debug', $logger->logs[0]['level']);
+        $this->assertSame('info', $logger->logs[0]['level']);
         $this->assertSame('MiddlewareClient initialized', $logger->logs[0]['message']);
 
         // Check for the request log

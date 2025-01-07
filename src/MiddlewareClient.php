@@ -150,6 +150,16 @@ class MiddlewareClient
     }
 
     /**
+     * Get the container of transactions.
+     *
+     * @return array the container of transactions
+     */
+    public function getContainer(): array
+    {
+        return $this->container;
+    }
+
+    /**
      * Get the debug information.
      *
      * @return array the debug information
@@ -187,8 +197,8 @@ class MiddlewareClient
     /**
      * Create a request with optional headers and body.
      *
-     * @param string $method HTTP method (e.g., 'GET', 'POST').
-     * @param string $uri    request URI
+     * @param string $method  HTTP method (e.g., 'GET', 'POST').
+     * @param string $uri     request URI
      * @param array  $options guzzle options, including headers and body
      *
      * @return RequestInterface the created request
@@ -320,16 +330,6 @@ class MiddlewareClient
                 [],
                 json_encode(['error' => $e->getMessage()])
             );
-    }
-
-    /**
-     * Get the container of transactions.
-     *
-     * @return array the container of transactions
-     */
-    public function getContainer(): array
-    {
-        return $this->container;
     }
 
     /**

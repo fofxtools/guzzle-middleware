@@ -17,7 +17,7 @@ $logger->pushHandler(new StreamHandler('php://stdout', Level::Info));
 $client = new MiddlewareClient([], $logger);
 
 // Create and send request
-$request = $client->createRequest('GET', 'http://example.com');
+$request  = $client->createRequest('GET', 'http://example.com');
 $response = $client->send($request);
 
 // Print the container
