@@ -132,6 +132,27 @@ class MiddlewareClientTest extends TestCase
         $this->assertStringContainsString('Host: example.com', $debug[$uri]);
     }
 
+    public function testCreateRequest()
+    {
+        $client = new MiddlewareClient(['handler' => $this->handlerStack], $this->logger);
+        $request = $client->createRequest('GET', 'http://example.com');
+        $this->assertInstanceOf(RequestInterface::class, $request);
+        $this->assertEquals('GET', $request->getMethod());
+        $this->assertEquals('http://example.com', (string)$request->getUri());
+    }
+
+    public function testCreateRequestWithOptions()
+    {
+        $client = new MiddlewareClient(['handler' => $this->handlerStack], $this->logger);
+        $options = ['headers' => ['X-Test-Header' => 'test-value'], 'body' => 'test-body'];
+        $request = $client->createRequest('GET', 'http://example.com', $options);
+        $this->assertInstanceOf(RequestInterface::class, $request);
+        $this->assertEquals('GET', $request->getMethod());
+        $this->assertEquals('http://example.com', (string)$request->getUri());
+        $this->assertEquals('test-value', $request->getHeaderLine('X-Test-Header'));
+        $this->assertEquals('test-body', (string)$request->getBody());
+    }
+
     public function testMakeRequestSuccess()
     {
         $mock = new MockHandler([

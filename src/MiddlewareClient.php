@@ -103,7 +103,7 @@ class MiddlewareClient
         // Initialize the request factory
         $this->requestFactory = $config['request_factory'] ?? new HttpFactory();
 
-        $this->logger->debug('MiddlewareClient initialized', [
+        $this->logger->info('MiddlewareClient initialized', [
             'proxyConfig'  => $proxyConfig,
             'customConfig' => $config,
         ]);
@@ -177,11 +177,39 @@ class MiddlewareClient
         $debugContent = stream_get_contents($debugStream);
         if ($debugContent !== false) {
             $this->debug[$uri] = $debugContent;
-            $this->logger->debug('Debug info captured for URI: ' . $uri, ['debugLength' => strlen($debugContent)]);
+            $this->logger->info('Debug info captured for URI: ' . $uri, ['debugLength' => strlen($debugContent)]);
         } else {
             $this->logger->warning('Failed to read debug stream for URI: ' . $uri);
         }
         fclose($debugStream);
+    }
+
+    /**
+     * Create a request with optional headers and body.
+     *
+     * @param string $method HTTP method (e.g., 'GET', 'POST').
+     * @param string $uri    request URI
+     * @param array  $options guzzle options, including headers and body
+     *
+     * @return RequestInterface the created request
+     */
+    public function createRequest(string $method, string $uri = '', array $options = []): RequestInterface
+    {
+        $request = $this->requestFactory->createRequest($method, $uri);
+
+        // Add headers and body to the request if provided
+        if (isset($options['headers'])) {
+            foreach ($options['headers'] as $name => $value) {
+                $request = $request->withHeader($name, $value);
+            }
+        }
+        if (isset($options['body'])) {
+            $request = $request->withBody(\GuzzleHttp\Psr7\Utils::streamFor($options['body']));
+        }
+
+        $this->logger->info('Request created', ['method' => $method, 'uri' => $uri, 'options' => $options]);
+
+        return $request;
     }
 
     /**
@@ -207,18 +235,8 @@ class MiddlewareClient
 
         $startTime = microtime(true);
 
-        // Create the request object
-        $request = $this->requestFactory->createRequest($method, $uri);
-
-        // Add headers and body to the request if provided
-        if (isset($options['headers'])) {
-            foreach ($options['headers'] as $name => $value) {
-                $request = $request->withHeader($name, $value);
-            }
-        }
-        if (isset($options['body'])) {
-            $request = $request->withBody(\GuzzleHttp\Psr7\Utils::streamFor($options['body']));
-        }
+        // Use createRequest to create the request object
+        $request = $this->createRequest($method, $uri, $options);
 
         try {
             $response = $this->send($request, $options);
@@ -325,7 +343,7 @@ class MiddlewareClient
      */
     public function getLastTransaction(): array
     {
-        $this->logger->debug('Retrieving output');
+        $this->logger->info('Retrieving output');
 
         $output = [];
 
@@ -338,9 +356,9 @@ class MiddlewareClient
 
             $debugInfo = $this->debug[(string) $request->getUri()] ?? null;
             if ($debugInfo !== null) {
-                $this->logger->debug('Debug info retrieved', ['debugLength' => strlen($debugInfo)]);
+                $this->logger->info('Debug info retrieved', ['debugLength' => strlen($debugInfo)]);
             } else {
-                $this->logger->debug('No debug info available for this request');
+                $this->logger->info('No debug info available for this request');
             }
 
             // Format output for the most recent request/response
@@ -363,12 +381,12 @@ class MiddlewareClient
                 'debug' => $this->debug[(string) $request->getUri()] ?? null,
             ];
 
-            $this->logger->debug('Output retrieved', [
+            $this->logger->info('Output retrieved', [
                 'transactionCount' => count($this->container),
                 'latestStatusCode' => $output[0]['response']['statusCode'],
             ]);
         } else {
-            $this->logger->debug('No output available');
+            $this->logger->info('No output available');
         }
 
         return $output;
@@ -404,7 +422,7 @@ class MiddlewareClient
      */
     public function getAllTransactions(): array
     {
-        $this->logger->debug('Retrieving all transactions');
+        $this->logger->info('Retrieving all transactions');
 
         $output = [];
 
