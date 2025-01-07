@@ -42,7 +42,7 @@ use FOfX\GuzzleMiddleware\MiddlewareClient;
 
 $client = new MiddlewareClient();
 $response = $client->makeRequest('GET', 'https://www.example.com');
-$output = $client->getOutput();
+$output = $client->getLastTransaction();
 GuzzleMiddleware\printOutput($output);
 ```
 

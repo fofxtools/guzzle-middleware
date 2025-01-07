@@ -82,8 +82,19 @@ class MiddlewareClient
     public function __construct(array $config = [], ?LoggerInterface $logger = null, ?array $proxyConfig = null)
     {
         $this->logger = $logger ?? new NullLogger();
-        $this->stack  = $config['handler'] ?? HandlerStack::create();
-        $this->stack->push(Middleware::history($this->container));
+
+        // Initialize container first
+        if (isset($config['history_container'])) {
+            $this->container = &$config['history_container'];
+        }
+
+        // Then set up the handler stack
+        $this->stack = $config['handler'] ?? HandlerStack::create();
+
+        // Only add history middleware if we're using our own handler stack
+        if (!isset($config['handler'])) {
+            $this->stack->push(Middleware::history($this->container));
+        }
 
         // Merge default configuration with any proxy settings and passed config
         $config            = Helper\array_merge_recursive_distinct($this->getDefaultConfig($proxyConfig), $config);
@@ -292,7 +303,7 @@ class MiddlewareClient
      *
      * @return array formatted output of the most recent transaction
      */
-    public function getOutput(): array
+    public function getLastTransaction(): array
     {
         $this->logger->debug('Retrieving output');
 
@@ -352,7 +363,7 @@ class MiddlewareClient
      * @param string|null $divider   The divider string to separate sections (default: 50 dashes if null)
      * @param bool        $useLogger Whether to use the Monolog logger (default: true)
      */
-    public function printOutput(
+    public function printLastTransaction(
         bool $truncate = true,
         int $maxLength = 1000,
         bool $escape = true,
@@ -360,9 +371,64 @@ class MiddlewareClient
         bool $useLogger = true
     ): void {
         // Retrieve the output using getOutput()
-        $output = $this->getOutput();
+        $output = $this->getLastTransaction();
 
         // Call the standalone printOutput() function
+        printOutput($output, $truncate, $maxLength, $escape, $divider, $useLogger ? $this->logger : null);
+    }
+
+    /**
+     * Retrieve all transactions' output.
+     *
+     * @return array formatted output of all transactions
+     */
+    public function getAllTransactions(): array
+    {
+        $this->logger->debug('Retrieving all transactions');
+
+        $output = [];
+
+        foreach ($this->container as $transaction) {
+            $response = $transaction['response'];
+            $request  = $transaction['request'];
+
+            $output[] = [
+                'request' => [
+                    'method'  => $request->getMethod(),
+                    'url'     => (string) $request->getUri(),
+                    'headers' => json_encode($request->getHeaders()),
+                    'body'    => (string) $request->getBody(),
+                ],
+                'response' => [
+                    'statusCode'    => $response->getStatusCode(),
+                    'headers'       => json_encode($response->getHeaders()),
+                    'body'          => (string) $response->getBody(),
+                    'contentLength' => (int) $response->getHeaderLine('Content-Length'),
+                ],
+                'debug' => $this->debug[(string) $request->getUri()] ?? null,
+            ];
+        }
+
+        return $output;
+    }
+
+    /**
+     * Print all transactions in a human-readable format.
+     *
+     * @param bool        $truncate  Whether to truncate long outputs (default: true)
+     * @param int         $maxLength Maximum length of truncation (default: 1000)
+     * @param bool        $escape    Whether to apply htmlspecialchars to sanitize output (default: true)
+     * @param string|null $divider   The divider string to separate sections (default: 50 dashes if null)
+     * @param bool        $useLogger Whether to use the Monolog logger (default: true)
+     */
+    public function printAllTransactions(
+        bool $truncate = true,
+        int $maxLength = 1000,
+        bool $escape = true,
+        string $divider = null,
+        bool $useLogger = true
+    ): void {
+        $output = $this->getAllTransactions();
         printOutput($output, $truncate, $maxLength, $escape, $divider, $useLogger ? $this->logger : null);
     }
 }

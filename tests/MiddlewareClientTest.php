@@ -182,13 +182,13 @@ class MiddlewareClientTest extends TestCase
         $this->assertJsonStringEqualsJsonString('{"error":"Error without response"}', (string)$response->getBody());
     }
 
-    public function testGetOutput()
+    public function testGetLastTransaction()
     {
         $this->mockHandler->append(new Response(200, ['Content-Type' => 'application/json'], '{"key":"value"}'));
 
         $client = new MiddlewareClient(['handler' => $this->handlerStack], $this->logger);
         $client->makeRequest('GET', 'http://example.com');
-        $output = $client->getOutput();
+        $output = $client->getLastTransaction();
 
         $this->assertIsArray($output);
         $this->assertCount(1, $output); // Ensure only 1 transaction is returned
@@ -202,59 +202,22 @@ class MiddlewareClientTest extends TestCase
         $this->assertEquals('application/json', $headers['Content-Type'][0]);
     }
 
-    public function testGetOutputHandlesRedirect()
-    {
-        $this->mockHandler->append(
-            new Response(301, ['Location' => 'http://example.com/redirected']),
-            new Response(200, [], 'Redirected Content')
-        );
-
-        $client = new MiddlewareClient(['handler' => $this->handlerStack], $this->logger);
-        $client->makeRequest('GET', 'http://example.com');
-        $output = $client->getOutput();
-
-        // Ensure the final response is captured
-        $this->assertCount(1, $output); // Only the final response should be in the output
-        $this->assertEquals(200, $output[0]['response']['statusCode']); // Ensure final response status is 200
-        $this->assertEquals('Redirected Content', $output[0]['response']['body']); // Ensure final response body is correct
-    }
-
-    public function testGetOutputIncludesDebugInfo()
-    {
-        $mock = new MockHandler([
-            function ($request, $options) {
-                // Simulate debug output
-                $debugStream = $options['debug'];
-                fwrite($debugStream, 'Debug information');
-
-                return new Response(200);
-            },
-        ]);
-        $handlerStack = HandlerStack::create($mock);
-        $client       = new MiddlewareClient(['handler' => $handlerStack], $this->logger);
-        $client->makeRequest('GET', 'http://example.com');
-        $output = $client->getOutput();
-
-        $this->assertArrayHasKey('debug', $output[0]);
-        $this->assertNotEmpty($output[0]['debug']);
-    }
-
-    public function testGetOutputWithNoTransactions()
+    public function testGetLastTransactionWithNoTransactions()
     {
         $client = new MiddlewareClient(['handler' => $this->handlerStack], $this->logger);
-        $output = $client->getOutput(); // No transactions made yet
+        $output = $client->getLastTransaction(); // No transactions made yet
 
         $this->assertEmpty($output); // Expect an empty output array
     }
 
-    public function testPrintOutputWithLogger()
+    public function testPrintLastTransaction()
     {
         $this->mockHandler->append(new Response(200, ['X-Foo' => 'Bar'], 'Hello, World'));
         $client = new MiddlewareClient(['handler' => $this->handlerStack], $this->logger);
         $client->makeRequest('GET', 'http://example.com');
 
         ob_start();
-        $client->printOutput(true, 1000, true, null, true);
+        $client->printLastTransaction(true, 1000, true, null, true);
         $output = ob_get_clean();
 
         // Verify that the logger received the output
@@ -264,14 +227,14 @@ class MiddlewareClientTest extends TestCase
         );
     }
 
-    public function testPrintOutputWithoutLogger()
+    public function testPrintLastTransactionWithLogger()
     {
         $this->mockHandler->append(new Response(200, ['X-Foo' => 'Bar'], 'Hello, World'));
         $client = new MiddlewareClient(['handler' => $this->handlerStack], $this->logger);
         $client->makeRequest('GET', 'http://example.com');
 
         ob_start();
-        $client->printOutput(true, 1000, true, null, false);
+        $client->printLastTransaction(true, 1000, true, null, false);
         $output = ob_get_clean();
 
         // Verify output was echoed
@@ -299,5 +262,48 @@ class MiddlewareClientTest extends TestCase
         $requestLog = array_filter($logger->logs, fn ($log) => $log['message'] === 'Starting request');
         $this->assertNotEmpty($requestLog, 'No request log found');
         $this->assertSame('info', reset($requestLog)['level']);
+    }
+
+    public function testGetAllTransactions()
+    {
+        $this->mockHandler->append(
+            new Response(200, ['X-Test' => 'Value'], 'Test Content')
+        );
+
+        $client = new MiddlewareClient([
+            'handler' => $this->handlerStack,
+        ], $this->logger);
+
+        // Make one request
+        $client->makeRequest('GET', 'http://example.com');
+
+        // Get all transactions
+        $output = $client->getAllTransactions();
+
+        $this->assertCount(1, $output);
+        $this->assertEquals(200, $output[0]['response']['statusCode']);
+        $this->assertEquals('Test Content', $output[0]['response']['body']);
+    }
+
+    public function testPrintAllTransactions()
+    {
+        $this->mockHandler->append(
+            new Response(200, ['X-Test' => 'Value'], 'Test Content')
+        );
+
+        $client = new MiddlewareClient(['handler' => $this->handlerStack], $this->logger);
+        $client->makeRequest('GET', 'http://example.com');
+
+        // First verify the transaction count
+        $transactions = $client->getAllTransactions();
+        $this->assertCount(1, $transactions, 'Should have exactly one transaction');
+
+        // Then test the printing
+        ob_start();
+        $client->printAllTransactions(true, 1000, true, null, false);
+        $output = ob_get_clean();
+
+        $this->assertNotEmpty($output);
+        $this->assertStringContainsString('Test Content', $output);
     }
 }

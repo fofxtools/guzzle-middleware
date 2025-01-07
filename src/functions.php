@@ -298,5 +298,5 @@ function makeMiddlewareRequest(
     $client = new MiddlewareClient($config, $logger);
     $client->makeRequest($method, $uri, $options);
 
-    return $client->getOutput();
+    return $client->getLastTransaction();
 }
