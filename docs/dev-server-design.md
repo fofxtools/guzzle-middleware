@@ -1,7 +1,7 @@
-# Development Client Design Document
+# Development Server Design Document
 
 ## Purpose
-Create a development client to demonstrate and verify GuzzleMiddleware's capabilities, focusing on:
+This is the plan to create a development server to demonstrate and verify GuzzleMiddleware's capabilities, focusing on:
 - Multiple transaction handling (redirects)
 - Logging functionality 
 - Debugging output
@@ -15,45 +15,53 @@ Create a development client to demonstrate and verify GuzzleMiddleware's capabil
 - `printOutput()` - Function for output formatting
 - Monolog integration for logging
 
-### Development Client Architecture
+### Development Server Architecture
 
 #### File Structure
 ```
-dev-client/
-├── src/
-│   ├── DevClient.php         # Main development client implementation
-│   ├── DevServer.php         # Local development server implementation
-│   └── Scenarios/            # Development scenario implementations
-├── public/
-│   ├── index.php             # Router for development endpoints
-│   ├── redirect.php          # Redirect endpoint handler
-│   └── error.php             # Error scenario handler
-├── config/
-│   └── dev-endpoints.php     # Local endpoint configurations
-└── run.php                   # CLI entry point
+src/
+├── dev-server.php                # Simple procedural endpoint handler
+├── MiddlewareClient.php          # Existing core middleware client
+└── functions.php                 # Existing helper functions
 ```
+
+### Starting the Development Server
+
+Start the built-in PHP development server:
+```bash
+# From project root
+php -S localhost:8000 src/dev-server.php
+```
+
+This will:
+- Start a local server on port 8000
+- Use dev-server.php as the router for all requests
+- Handle endpoints like /api/test, /redirect/3, etc.
 
 ### Test Scenarios
 
 1. **Basic Transaction Tests**
 ```php
 // Example scenario using local test server
-$client->makeRequest('GET', 'http://localhost:8080/api/test');
-$client->makeRequest('POST', 'http://localhost:8080/api/echo', ['json' => ['test' => 'data']]);
+use FOfX\GuzzleMiddleware\MiddlewareClient;
+
+$client = new MiddlewareClient();
+$client->makeRequest('GET', 'http://localhost:8000/api/test');
+$client->makeRequest('POST', 'http://localhost:8000/api/echo', ['json' => ['test' => 'data']]);
 ```
 
 2. **Redirect Chain Tests**
 ```php
 // Example scenarios with local redirects
-$client->makeRequest('GET', 'http://localhost:8080/redirect/3');  // 3 redirects
-$client->makeRequest('GET', 'http://localhost:8080/redirect/loop');  // Redirect loop test
+$client->makeRequest('GET', 'http://localhost:8000/redirect/3');  // 3 redirects
+$client->makeRequest('GET', 'http://localhost:8000/redirect/loop');  // Redirect loop test
 ```
 
 3. **Error Handling Tests**
 ```php
-$client->makeRequest('GET', 'http://localhost:8080/error/404');  // 404 error
-$client->makeRequest('GET', 'http://localhost:8080/error/500');  // 500 error
-$client->makeRequest('GET', 'http://localhost:8080/timeout');    // Timeout simulation
+$client->makeRequest('GET', 'http://localhost:8000/error/404');  // 404 error
+$client->makeRequest('GET', 'http://localhost:8000/error/500');  // 500 error
+$client->makeRequest('GET', 'http://localhost:8000/timeout');    // Timeout simulation
 ```
 
 ### Local Development Server
@@ -77,7 +85,7 @@ $client->makeRequest('GET', 'http://localhost:8080/timeout');    // Timeout simu
 - Connection issues
 - Rate limiting simulation
 
-#### Phase 3: Advanced Features
+#### Phase 3: Advanced Features (Optional)
 - Custom headers
 - Different body formats
 - Local SSL testing
@@ -92,18 +100,14 @@ $client->makeRequest('GET', 'http://localhost:8080/timeout');    // Timeout simu
 ### Usage Example
 ```php
 // Start local development server
-$server = new DevServer();
-$server->start();
+use FOfX\GuzzleMiddleware\MiddlewareClient;
 
-// Run scenarios
-$client = new DevClient();
-$client->runAllScenarios();
+// Create client and run tests
+$client = new MiddlewareClient();
+$client->makeRequest('GET', 'http://localhost:8000/api/test');
 
-// Specific scenario
-$client->runRedirectScenario();
-
-// Stop server
-$server->stop();
+// Test redirect scenario
+$client->makeRequest('GET', 'http://localhost:8000/redirect/3');
 ```
 
 ### Success Criteria
@@ -121,9 +125,8 @@ $server->stop();
 - Rate limiting endpoints (/ratelimit)
 
 ## Next Steps
-1. Implement TestServer class for local testing
-2. Implement basic TestClient class
-3. Create local endpoint handlers
+1. Create dev-server.php with basic endpoints
+2. Implement redirect handling
+3. Add error scenario endpoints
 4. Add logging integration
-5. Implement redirect chain handling
-6. Add error scenario simulations
+5. Test with MiddlewareClient
