@@ -32,9 +32,80 @@ class MiddlewareClientTest extends TestCase
         $this->logger->pushHandler($this->testHandler);
     }
 
+    public function testGetDefaultConfig(): void
+    {
+        $client = new MiddlewareClient([], $this->logger);
+        $config = $client->getDefaultConfig();
+        $this->assertEquals(5, $config['connect_timeout']);
+        $this->assertEquals(10, $config['timeout']);
+    }
+
+    public function testGetDefaultConfigWithProxy(): void
+    {
+        $proxyUrl = 'http://proxy.example.com:8000';
+        $client   = new MiddlewareClient([], $this->logger);
+        $config   = $client->getDefaultConfig(['proxy' => $proxyUrl]);
+        $this->assertArrayHasKey('proxy', $config);
+        $this->assertEquals($proxyUrl, $config['proxy']);
+    }
+
+    public function testReset(): void
+    {
+        // Add mock response for the request
+        $this->mockHandler->append(new Response(200));
+
+        $config = ['handler' => $this->handlerStack];
+        $client = new MiddlewareClient($config, $this->logger);
+
+        // Make request to populate container and debug
+        $client->makeRequest('GET', 'http://example.com');
+
+        // Reset without providing handler stack
+        $client->reset();
+
+        // Verify container and debug are empty
+        $this->assertEmpty($client->getContainer());
+        $this->assertEmpty($client->getDebug());
+
+        // Verify client works with default handler
+        $response = $client->makeRequest('GET', 'http://example.com');
+        $this->assertEquals(200, $response->getStatusCode());
+    }
+
+    public function testResetWithNewHandler(): void
+    {
+        // Add mock response for the request
+        $this->mockHandler->append(new Response(200));
+
+        $config = ['handler' => $this->handlerStack];
+        $client = new MiddlewareClient($config, $this->logger);
+
+        // Make request to populate container and debug
+        $client->makeRequest('GET', 'http://example.com');
+
+        // Verify container and debug are populated
+        $this->assertNotEmpty($client->getContainer());
+        $this->assertNotEmpty($client->getDebug());
+
+        // Create new handler stack for reset
+        $newMockHandler  = new MockHandler([new Response(200)]);
+        $newHandlerStack = HandlerStack::create($newMockHandler);
+
+        // Reset the client with new handler stack
+        $client->reset($config);
+
+        // Verify container and debug are empty
+        $this->assertEmpty($client->getContainer());
+        $this->assertEmpty($client->getDebug());
+
+        // Verify client works with new handler
+        $response = $client->makeRequest('GET', 'http://example.com');
+        $this->assertEquals(200, $response->getStatusCode());
+    }
+
     public function testProxyConfiguration()
     {
-        $proxyUrl = 'http://proxy.example.com:8080';
+        $proxyUrl = 'http://proxy.example.com:8000';
         $client   = new MiddlewareClient(['proxy' => $proxyUrl], $this->logger);
 
         $mock = new MockHandler([

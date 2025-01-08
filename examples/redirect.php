@@ -15,8 +15,8 @@ $logger->pushHandler(new StreamHandler('php://stdout', Level::Info));
 // Create a new MiddlewareClient instance
 $client = new MiddlewareClient([], $logger);
 
-// Make a request
-$response = $client->makeRequest('GET', 'https://www.example.com');
+// Make a request to local dev server with 3 redirects
+$response = $client->makeRequest('GET', 'http://localhost:8000/redirect/3');
 
 // Print the container and debug info
 print_r($client->getContainer());

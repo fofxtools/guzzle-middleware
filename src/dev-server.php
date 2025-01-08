@@ -29,11 +29,38 @@ function handleRequest(): void
         exit;
     };
 
-    // Initial basic route
+    // Route handling
     if ($path === '/api/test') {
         $sendResponse([
             'status'  => 'ok',
             'message' => 'Basic test endpoint',
+        ]);
+    }
+
+    if ($path === '/api/echo') {
+        $sendResponse([
+            'status'  => 'ok',
+            'method'  => $_SERVER['REQUEST_METHOD'],
+            'headers' => getallheaders(),
+            'query'   => $_GET,
+            'body'    => file_get_contents('php://input'),
+        ]);
+    }
+
+    // Simple redirect endpoint
+    if (preg_match('#^/redirect/(\d+)$#', $path, $matches)) {
+        $count     = (int) $matches[1];
+        $nextCount = $count - 1;
+
+        if ($nextCount > 0) {
+            header('Location: /redirect/' . $nextCount);
+            http_response_code(302);
+            exit;
+        }
+
+        $sendResponse([
+            'status'  => 'ok',
+            'message' => 'Redirect chain completed',
         ]);
     }
 

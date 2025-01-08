@@ -378,7 +378,7 @@ Debug Info:
 To use a proxy with the MiddlewareClient:
 
 ```php
-$proxyConfig = ['proxy' => 'http://proxy.example.com:8080'];
+$proxyConfig = ['proxy' => 'http://proxy.example.com:8000'];
 $client = new MiddlewareClient(proxyConfig: $proxyConfig);
 ```
 

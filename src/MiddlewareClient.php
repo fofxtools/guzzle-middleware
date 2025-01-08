@@ -64,6 +64,7 @@ use FOfX\Helper;
 class MiddlewareClient
 {
     private ClientInterface             $client;
+    private array $config                          = [];
     private array                       $debug     = [];
     private array                       $container = [];
     private HandlerStack                $stack;
@@ -82,6 +83,8 @@ class MiddlewareClient
     public function __construct(array $config = [], ?LoggerInterface $logger = null, ?array $proxyConfig = null)
     {
         $this->logger = $logger ?? new NullLogger();
+
+        $this->config = $config;
 
         // Initialize container first
         if (isset($config['history_container'])) {
@@ -120,7 +123,7 @@ class MiddlewareClient
      *
      * @return array default Guzzle configuration settings
      */
-    private function getDefaultConfig(?array $proxyConfig = null): array
+    public function getDefaultConfig(?array $proxyConfig = null): array
     {
         $defaultConfig = [
             'connect_timeout' => 5,
@@ -132,6 +135,51 @@ class MiddlewareClient
         }
 
         return $defaultConfig;
+    }
+
+    /**
+     * Reset the client state by clearing transaction history and recreating the client.
+     * This ensures a completely fresh state for new requests.
+     *
+     * @param array|null $config Optional configuration to use when recreating the client
+     */
+    public function reset(?array $config = null): void
+    {
+        // If container is provided, use it
+        if ($config && isset($config['history_container'])) {
+            $this->container = &$config['history_container'];
+        }
+        // Else clear transaction data while preserving references
+        elseif (!empty($this->container)) {
+            // If container is referenced, clear it without breaking reference
+            array_splice($this->container, 0, count($this->container));
+        } else {
+            $this->container = [];
+        }
+
+        // Clear debug data
+        $this->debug = [];
+
+        // Create new handler stack
+        $this->stack = HandlerStack::create();
+        $this->stack->push(Middleware::history($this->container));
+
+        // Create new client with either provided config or current settings
+        if ($config) {
+            // Use provided config with defaults and new handler
+            $config            = Helper\array_merge_recursive_distinct($this->getDefaultConfig(), $config);
+            $config['handler'] = $this->stack;
+            // Store new config
+            $this->config = $config;
+            // Create new client
+            $this->client = new Client($config);
+        } else {
+            // Use existing config with new handler
+            $this->config['handler'] = $this->stack;
+            $this->client            = new Client($this->config);
+        }
+
+        $this->logger->info('Client state reset');
     }
 
     /**
