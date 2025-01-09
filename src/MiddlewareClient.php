@@ -412,16 +412,19 @@ class MiddlewareClient
             // Capture any debug information if available
             $output[] = [
                 'request' => [
-                    'method'  => $request->getMethod(),
-                    'url'     => (string) $request->getUri(),
-                    'headers' => json_encode($request->getHeaders()),
-                    'body'    => (string) $request->getBody(),
+                    'method'   => $request->getMethod(),
+                    'url'      => (string) $request->getUri(),
+                    'headers'  => json_encode($request->getHeaders()),
+                    'body'     => (string) $request->getBody(),
+                    'protocol' => $request->getProtocolVersion(),
+                    'target'   => $request->getRequestTarget(),
                 ],
                 'response' => [
                     'statusCode'    => $response->getStatusCode(),
                     'headers'       => json_encode($response->getHeaders()),
                     'body'          => (string) $response->getBody(),
                     'contentLength' => (int) $response->getHeaderLine('Content-Length'),
+                    'reasonPhrase'  => $response->getReasonPhrase(),
                 ],
                 'debug' => $this->debug[(string) $request->getUri()] ?? null,
             ];
@@ -475,18 +478,25 @@ class MiddlewareClient
             $response = $transaction['response'];
             $request  = $transaction['request'];
 
+            // Format output for each transaction
+            // JSON encode headers for standardization
+            // JSON encode response headers
+            // Capture any debug information if available
             $output[] = [
                 'request' => [
-                    'method'  => $request->getMethod(),
-                    'url'     => (string) $request->getUri(),
-                    'headers' => json_encode($request->getHeaders()),
-                    'body'    => (string) $request->getBody(),
+                    'method'   => $request->getMethod(),
+                    'url'      => (string) $request->getUri(),
+                    'headers'  => json_encode($request->getHeaders()),
+                    'body'     => (string) $request->getBody(),
+                    'protocol' => $request->getProtocolVersion(),
+                    'target'   => $request->getRequestTarget(),
                 ],
                 'response' => [
                     'statusCode'    => $response->getStatusCode(),
                     'headers'       => json_encode($response->getHeaders()),
                     'body'          => (string) $response->getBody(),
                     'contentLength' => (int) $response->getHeaderLine('Content-Length'),
+                    'reasonPhrase'  => $response->getReasonPhrase(),
                 ],
                 'debug' => $this->debug[(string) $request->getUri()] ?? null,
             ];

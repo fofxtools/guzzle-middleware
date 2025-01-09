@@ -346,8 +346,11 @@ class MiddlewareClientTest extends TestCase
 
         $this->assertIsArray($output);
         $this->assertCount(1, $output); // Ensure only 1 transaction is returned
-        $this->assertEquals(200, $output[0]['response']['statusCode']); // Updated key for response
-        $this->assertEquals('{"key":"value"}', $output[0]['response']['body']); // Updated key for body
+        $this->assertEquals(200, $output[0]['response']['statusCode']);
+        $this->assertEquals('{"key":"value"}', $output[0]['response']['body']);
+        $this->assertEquals('OK', $output[0]['response']['reasonPhrase']);
+        $this->assertEquals('1.1', $output[0]['request']['protocol']);
+        $this->assertEquals('/', $output[0]['request']['target']);
 
         // Check if the headers are valid JSON and contain the expected 'Content-Type'
         $this->assertJson($output[0]['response']['headers']);
@@ -437,6 +440,9 @@ class MiddlewareClientTest extends TestCase
         $this->assertCount(1, $output);
         $this->assertEquals(200, $output[0]['response']['statusCode']);
         $this->assertEquals('Test Content', $output[0]['response']['body']);
+        $this->assertEquals('OK', $output[0]['response']['reasonPhrase']);
+        $this->assertEquals('1.1', $output[0]['request']['protocol']);
+        $this->assertEquals('/', $output[0]['request']['target']);
     }
 
     public function testPrintAllTransactions()
