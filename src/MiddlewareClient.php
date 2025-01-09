@@ -91,13 +91,11 @@ class MiddlewareClient
             $this->container = &$config['history_container'];
         }
 
-        // Then set up the handler stack
+        // Set up handler stack
         $this->stack = $config['handler'] ?? HandlerStack::create();
 
-        // Only add history middleware if we're using our own handler stack
-        if (!isset($config['handler'])) {
-            $this->stack->push(Middleware::history($this->container));
-        }
+        // Always add history middleware, even with custom handler
+        $this->stack->push(Middleware::history($this->container));
 
         // Merge default configuration with any proxy settings and passed config
         $config            = Helper\array_merge_recursive_distinct($this->getDefaultConfig($proxyConfig), $config);
@@ -234,8 +232,14 @@ class MiddlewareClient
         rewind($debugStream);
         $debugContent = stream_get_contents($debugStream);
         if ($debugContent !== false) {
-            $this->debug[$uri] = $debugContent;
-            $this->logger->info('Debug info captured for URI: ' . $uri, ['debugLength' => strlen($debugContent)]);
+            // Store debug info for each request in chain
+            foreach ($this->container as $transaction) {
+                $requestUri = (string)$transaction['request']->getUri();
+                if (!isset($this->debug[$requestUri])) {
+                    $this->debug[$requestUri] = $debugContent;
+                }
+            }
+            $this->logger->info('Debug info captured', ['debugLength' => strlen($debugContent)]);
         } else {
             $this->logger->warning('Failed to read debug stream for URI: ' . $uri);
         }
@@ -330,13 +334,6 @@ class MiddlewareClient
         // Capture debug information for the request
         $this->captureDebugInfo($debugStream, $uri);
 
-        // Store the full transaction (request and response)
-        $this->container[] = [
-            'request'  => $request,
-            'response' => $response,
-            'duration' => $duration,
-        ];
-
         $this->logger->info('Request completed', [
             'method'   => $method,
             'uri'      => $uri,
@@ -396,7 +393,7 @@ class MiddlewareClient
         $output = [];
 
         if (!empty($this->container)) {
-            // Get the most recent transaction to avoid duplicates or redirects
+            // Get the most recent transaction
             $transaction = $this->container[array_key_last($this->container)];
 
             $response = $transaction['response'];

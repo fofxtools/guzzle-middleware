@@ -16,8 +16,8 @@ $logger->pushHandler(new StreamHandler('php://stdout', Level::Info));
 // Create a new MiddlewareClient instance with logger
 $client = new MiddlewareClient([], $logger);
 
-// Create and send request
-$request  = $client->createRequest('GET', 'http://example.com');
+// Make a request to local dev server
+$request  = $client->createRequest('GET', 'http://localhost:8000/api/test');
 $response = $client->send($request);
 
 // Print the container

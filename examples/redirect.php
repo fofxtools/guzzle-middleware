@@ -9,10 +9,11 @@ use Monolog\Logger;
 use Monolog\Handler\StreamHandler;
 use Monolog\Level;
 
+// Create Monolog logger with stdout handler
 $logger = new Logger('guzzle-middleware');
 $logger->pushHandler(new StreamHandler('php://stdout', Level::Info));
 
-// Create a new MiddlewareClient instance
+// Create a new MiddlewareClient instance with logger
 $client = new MiddlewareClient([], $logger);
 
 // Make a request to local dev server with 3 redirects
