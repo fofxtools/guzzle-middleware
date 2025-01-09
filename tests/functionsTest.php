@@ -229,7 +229,6 @@ class FunctionsTest extends TestCase
                     'body'          => '<html><body>Test</body></html>',
                     'contentLength' => 32,
                 ],
-                'debug' => 'Debug information',
             ],
         ];
 
@@ -245,7 +244,6 @@ class FunctionsTest extends TestCase
         $this->assertStringContainsString('200', $output);
         $this->assertStringContainsString('text/html', $output);
         $this->assertStringContainsString('&lt;html&gt;&lt;body&gt;Test&lt;/body&gt;&lt;/html&gt;', $output);
-        $this->assertStringContainsString('Debug information', $output);
     }
 
     /**
@@ -267,7 +265,6 @@ class FunctionsTest extends TestCase
                     'body'          => '<html><body>Test</body></html>',
                     'contentLength' => 32,
                 ],
-                'debug' => 'Debug information',
             ],
         ];
 
@@ -283,7 +280,6 @@ class FunctionsTest extends TestCase
         $this->assertStringContainsString('200', $output);
         $this->assertStringContainsString('text/html', $output);
         $this->assertStringContainsString('<html><body>Test</body></html>', $output);
-        $this->assertStringContainsString('Debug information', $output);
     }
 
     /**
@@ -483,7 +479,6 @@ class FunctionsTest extends TestCase
         $this->assertIsArray($output);
         $this->assertArrayHasKey('request', $output[0]);
         $this->assertArrayHasKey('response', $output[0]);
-        $this->assertArrayHasKey('debug', $output[0]);
 
         // Decode the request headers JSON string
         $requestHeaders = json_decode($output[0]['request']['headers'], true);
@@ -540,7 +535,6 @@ class FunctionsTest extends TestCase
         $this->assertIsArray($output);
         $this->assertArrayHasKey('request', $output[0]);
         $this->assertArrayHasKey('response', $output[0]);
-        $this->assertArrayHasKey('debug', $output[0]);
 
         // Decode the request headers JSON string
         $requestHeaders = json_decode($output[0]['request']['headers'], true);
@@ -574,7 +568,6 @@ class FunctionsTest extends TestCase
         $this->assertIsArray($output);
         $this->assertArrayHasKey('request', $output[0]);
         $this->assertArrayHasKey('response', $output[0]);
-        $this->assertArrayHasKey('debug', $output[0]);
 
         // Decode the request headers JSON string
         $requestHeaders = json_decode($output[0]['request']['headers'], true);

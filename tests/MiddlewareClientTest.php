@@ -367,6 +367,30 @@ class MiddlewareClientTest extends TestCase
         $this->assertEmpty($output); // Expect an empty output array
     }
 
+    public function testGetAllTransactions()
+    {
+        $this->mockHandler->append(
+            new Response(200, ['X-Test' => 'Value'], 'Test Content')
+        );
+
+        $client = new MiddlewareClient([
+            'handler' => $this->handlerStack,
+        ], $this->logger);
+
+        // Make one request
+        $client->makeRequest('GET', 'http://example.com');
+
+        // Get all transactions
+        $output = $client->getAllTransactions();
+
+        $this->assertCount(1, $output);
+        $this->assertEquals(200, $output[0]['response']['statusCode']);
+        $this->assertEquals('Test Content', $output[0]['response']['body']);
+        $this->assertEquals('OK', $output[0]['response']['reasonPhrase']);
+        $this->assertEquals('1.1', $output[0]['request']['protocol']);
+        $this->assertEquals('/', $output[0]['request']['target']);
+    }
+
     public function testPrintLastTransaction()
     {
         $this->mockHandler->append(new Response(200, ['X-Foo' => 'Bar'], 'Hello, World'));
@@ -403,48 +427,6 @@ class MiddlewareClientTest extends TestCase
         );
     }
 
-    public function testWorksWithPsr3Logger(): void
-    {
-        $logger = new TestLogger();
-        $this->mockHandler->append(new Response(200, [], 'Hello World'));
-
-        $client = new MiddlewareClient(['handler' => $this->handlerStack], $logger);
-        $client->makeRequest('GET', 'http://example.com');
-
-        $this->assertNotEmpty($logger->logs);
-        $this->assertSame('info', $logger->logs[0]['level']);
-        $this->assertSame('MiddlewareClient initialized', $logger->logs[0]['message']);
-
-        // Check for the request log
-        $requestLog = array_filter($logger->logs, fn ($log) => $log['message'] === 'Starting request');
-        $this->assertNotEmpty($requestLog, 'No request log found');
-        $this->assertSame('info', reset($requestLog)['level']);
-    }
-
-    public function testGetAllTransactions()
-    {
-        $this->mockHandler->append(
-            new Response(200, ['X-Test' => 'Value'], 'Test Content')
-        );
-
-        $client = new MiddlewareClient([
-            'handler' => $this->handlerStack,
-        ], $this->logger);
-
-        // Make one request
-        $client->makeRequest('GET', 'http://example.com');
-
-        // Get all transactions
-        $output = $client->getAllTransactions();
-
-        $this->assertCount(1, $output);
-        $this->assertEquals(200, $output[0]['response']['statusCode']);
-        $this->assertEquals('Test Content', $output[0]['response']['body']);
-        $this->assertEquals('OK', $output[0]['response']['reasonPhrase']);
-        $this->assertEquals('1.1', $output[0]['request']['protocol']);
-        $this->assertEquals('/', $output[0]['request']['target']);
-    }
-
     public function testPrintAllTransactions()
     {
         $this->mockHandler->append(
@@ -465,5 +447,38 @@ class MiddlewareClientTest extends TestCase
 
         $this->assertNotEmpty($output);
         $this->assertStringContainsString('Test Content', $output);
+    }
+
+    public function testWorksWithPsr3Logger(): void
+    {
+        $logger = new TestLogger();
+        $this->mockHandler->append(new Response(200, [], 'Hello World'));
+
+        $client = new MiddlewareClient(['handler' => $this->handlerStack], $logger);
+        $client->makeRequest('GET', 'http://example.com');
+
+        $this->assertNotEmpty($logger->logs);
+        $this->assertSame('info', $logger->logs[0]['level']);
+        $this->assertSame('MiddlewareClient initialized', $logger->logs[0]['message']);
+
+        // Check for the request log
+        $requestLog = array_filter($logger->logs, fn ($log) => $log['message'] === 'Starting request');
+        $this->assertNotEmpty($requestLog, 'No request log found');
+        $this->assertSame('info', reset($requestLog)['level']);
+    }
+
+    public function testGetTransactionSummary()
+    {
+        $this->mockHandler->append(new Response(200, ['Content-Type' => 'application/json'], '{"key":"value"}'));
+        $client = new MiddlewareClient(['handler' => $this->handlerStack], $this->logger);
+        $client->makeRequest('GET', 'http://example.com');
+        $summary = $client->getTransactionSummary();
+        $this->assertArrayHasKey('request_methods', $summary);
+        $this->assertArrayHasKey('request_urls', $summary);
+        $this->assertArrayHasKey('request_protocols', $summary);
+        $this->assertArrayHasKey('request_targets', $summary);
+        $this->assertArrayHasKey('response_status_codes', $summary);
+        $this->assertArrayHasKey('response_content_lengths', $summary);
+        $this->assertArrayHasKey('response_reason_phrases', $summary);
     }
 }

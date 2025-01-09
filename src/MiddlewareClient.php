@@ -232,13 +232,11 @@ class MiddlewareClient
         rewind($debugStream);
         $debugContent = stream_get_contents($debugStream);
         if ($debugContent !== false) {
-            // Store debug info for each request in chain
-            foreach ($this->container as $transaction) {
-                $requestUri = (string)$transaction['request']->getUri();
-                if (!isset($this->debug[$requestUri])) {
-                    $this->debug[$requestUri] = $debugContent;
-                }
-            }
+            // Store debug info only for initial request URI
+            // This matches Guzzle's design where debug stream shows final connection state
+            $initialUri               = (string)$this->container[0]['request']->getUri();
+            $this->debug[$initialUri] = $debugContent;
+
             $this->logger->info('Debug info captured', ['debugLength' => strlen($debugContent)]);
         } else {
             $this->logger->warning('Failed to read debug stream for URI: ' . $uri);
@@ -399,13 +397,6 @@ class MiddlewareClient
             $response = $transaction['response'];
             $request  = $transaction['request'];
 
-            $debugInfo = $this->debug[(string) $request->getUri()] ?? null;
-            if ($debugInfo !== null) {
-                $this->logger->info('Debug info retrieved', ['debugLength' => strlen($debugInfo)]);
-            } else {
-                $this->logger->info('No debug info available for this request');
-            }
-
             // Format output for the most recent request/response
             // JSON encode headers for standardization
             // JSON encode response headers
@@ -426,7 +417,6 @@ class MiddlewareClient
                     'contentLength' => (int) $response->getHeaderLine('Content-Length'),
                     'reasonPhrase'  => $response->getReasonPhrase(),
                 ],
-                'debug' => $this->debug[(string) $request->getUri()] ?? null,
             ];
 
             $this->logger->info('Output retrieved', [
@@ -438,29 +428,6 @@ class MiddlewareClient
         }
 
         return $output;
-    }
-
-    /**
-     * Wrapper function to call getOutput() and print the output in a human-readable format.
-     *
-     * @param bool        $truncate  Whether to truncate long outputs (default: true)
-     * @param int         $maxLength Maximum length of truncation (default: 1000)
-     * @param bool        $escape    Whether to apply htmlspecialchars to sanitize output (default: true)
-     * @param string|null $divider   The divider string to separate sections (default: 50 dashes if null)
-     * @param bool        $useLogger Whether to use the Monolog logger (default: true)
-     */
-    public function printLastTransaction(
-        bool $truncate = true,
-        int $maxLength = 1000,
-        bool $escape = true,
-        string $divider = null,
-        bool $useLogger = true
-    ): void {
-        // Retrieve the output using getOutput()
-        $output = $this->getLastTransaction();
-
-        // Call the standalone printOutput() function
-        printOutput($output, $truncate, $maxLength, $escape, $divider, $useLogger ? $this->logger : null);
     }
 
     /**
@@ -498,11 +465,33 @@ class MiddlewareClient
                     'contentLength' => (int) $response->getHeaderLine('Content-Length'),
                     'reasonPhrase'  => $response->getReasonPhrase(),
                 ],
-                'debug' => $this->debug[(string) $request->getUri()] ?? null,
             ];
         }
 
         return $output;
+    }
+
+    /**
+     * Wrapper function to call getOutput() and print the output in a human-readable format.
+     *
+     * @param bool        $truncate  Whether to truncate long outputs (default: true)
+     * @param int         $maxLength Maximum length of truncation (default: 1000)
+     * @param bool        $escape    Whether to apply htmlspecialchars to sanitize output (default: true)
+     * @param string|null $divider   The divider string to separate sections (default: 50 dashes if null)
+     * @param bool        $useLogger Whether to use the Monolog logger (default: true)
+     */
+    public function printLastTransaction(
+        bool $truncate = true,
+        int $maxLength = 1000,
+        bool $escape = true,
+        string $divider = null,
+        bool $useLogger = true
+    ): void {
+        // Retrieve the output using getOutput()
+        $output = $this->getLastTransaction();
+
+        // Call the standalone printOutput() function
+        printOutput($output, $truncate, $maxLength, $escape, $divider, $useLogger ? $this->logger : null);
     }
 
     /**
@@ -523,5 +512,45 @@ class MiddlewareClient
     ): void {
         $output = $this->getAllTransactions();
         printOutput($output, $truncate, $maxLength, $escape, $divider, $useLogger ? $this->logger : null);
+    }
+
+    /**
+     * Get a condensed summary of all transactions in the request chain.
+     * Focuses on key identifiers while omitting verbose data like headers and bodies.
+     *
+     * @return array Associative array of transaction metrics
+     */
+    public function getTransactionSummary(): array
+    {
+        $this->logger->info('Generating transaction summary');
+
+        $summary = [
+            'request_methods'          => [],
+            'request_urls'             => [],
+            'request_protocols'        => [],
+            'request_targets'          => [],
+            'response_status_codes'    => [],
+            'response_content_lengths' => [],
+            'response_reason_phrases'  => [],
+        ];
+
+        foreach ($this->container as $transaction) {
+            $request  = $transaction['request'];
+            $response = $transaction['response'];
+
+            $summary['request_methods'][]          = $request->getMethod();
+            $summary['request_urls'][]             = (string)$request->getUri();
+            $summary['request_protocols'][]        = $request->getProtocolVersion();
+            $summary['request_targets'][]          = $request->getRequestTarget();
+            $summary['response_status_codes'][]    = $response->getStatusCode();
+            $summary['response_content_lengths'][] = (int)$response->getHeaderLine('Content-Length');
+            $summary['response_reason_phrases'][]  = $response->getReasonPhrase();
+        }
+
+        $this->logger->info('Transaction summary generated', [
+            'transactionCount' => count($this->container),
+        ]);
+
+        return $summary;
     }
 }
