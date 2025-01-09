@@ -12,6 +12,10 @@
 
 declare(strict_types=1);
 
+require __DIR__ . '/../bootstrap/app.php';
+
+use FOfX\Helper;
+
 // Basic error handling and logging setup
 error_reporting(E_ALL);
 ini_set('display_errors', '1');
@@ -61,6 +65,32 @@ function handleRequest(): void
         $sendResponse([
             'status'  => 'ok',
             'message' => 'Redirect chain completed',
+        ]);
+    }
+
+    // Error endpoint
+    if (preg_match('/^\/error\/(\d+)$/', $path, $matches)) {
+        $code = (int)$matches[1];
+        // Validate code is a valid HTTP status
+        if ($code >= 400 && $code < 600) {
+            http_response_code($code);
+            echo json_encode([
+                'status'  => 'error',
+                'code'    => $code,
+                'message' => 'Error response with code ' . $code,
+            ]);
+            exit;
+        }
+    }
+
+    // Delay endpoint
+    if (preg_match('/^\/delay\/([\d.]+)$/', $path, $matches)) {
+        $seconds = min((float)$matches[1], 30.0);  // Cap at 30 seconds for safety
+        Helper\float_sleep($seconds);
+        $sendResponse([
+            'status'  => 'ok',
+            'message' => "Response delayed by {$seconds} seconds",
+            'delay'   => $seconds,
         ]);
     }
 

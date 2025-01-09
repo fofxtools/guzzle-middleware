@@ -11,6 +11,9 @@ use GuzzleHttp\HandlerStack;
 use GuzzleHttp\Psr7\Response;
 use GuzzleHttp\Psr7\Request;
 use GuzzleHttp\Exception\RequestException;
+use GuzzleHttp\Exception\ConnectException;
+use GuzzleHttp\Exception\ClientException;
+use GuzzleHttp\Exception\ServerException;
 use Psr\Http\Message\RequestInterface;
 use Monolog\Logger;
 use Monolog\Handler\TestHandler;
@@ -316,24 +319,92 @@ class MiddlewareClientTest extends TestCase
         $this->assertNotEmpty($logs, 'No error logs found for network error');
     }
 
-    public function testMakeRequestRequestExceptionWithoutResponse()
+    public function testMakeRequestRequestExceptionWithoutResponse(): void
     {
-        $this->mockHandler->append(new RequestException('Error without response', new Request('GET', 'http://example.com')));
+        $this->mockHandler->append(new RequestException(
+            'Error without response',
+            new Request('GET', 'http://example.com')
+        ));
 
         $client   = new MiddlewareClient(['handler' => $this->handlerStack], $this->logger);
         $response = $client->makeRequest('GET', 'http://example.com');
 
-        $this->assertEquals(408, $response->getStatusCode());
-        $this->assertJsonStringEqualsJsonString('{"error":"Error without response"}', (string)$response->getBody());
+        // Default RequestException without response = 500
+        $this->assertEquals(500, $response->getStatusCode());
+        $this->assertJsonStringEqualsJsonString(
+            '{"error":"Error without response"}',
+            (string)$response->getBody()
+        );
     }
 
-    public function testHandleException()
+    public function testHandleException(): void
     {
-        $this->mockHandler->append(new RequestException('Error Communicating with Server', new Request('GET', 'http://example.com')));
-        $client   = new MiddlewareClient(['handler' => $this->handlerStack], $this->logger);
-        $response = $client->makeRequest('GET', 'http://example.com');
-        $this->assertEquals(408, $response->getStatusCode());
-        $this->assertJsonStringEqualsJsonString('{"error":"Error Communicating with Server"}', (string)$response->getBody());
+        $tests = [
+            // Connection/timeout issues
+            [
+                'exception' => new ConnectException(
+                    'Connection timed out',
+                    new Request('GET', 'http://example.com')
+                ),
+                'expectedCode' => 408,
+            ],
+            // Client error with response
+            [
+                'exception' => new ClientException(
+                    'Bad Request',
+                    new Request('GET', 'http://example.com'),
+                    new Response(400)
+                ),
+                'expectedCode' => 400,
+            ],
+            // Server error with response
+            [
+                'exception' => new ServerException(
+                    'Server Error',
+                    new Request('GET', 'http://example.com'),
+                    new Response(500)
+                ),
+                'expectedCode' => 500,
+            ],
+            // Generic request exception
+            [
+                'exception' => new RequestException(
+                    'Generic error',
+                    new Request('GET', 'http://example.com')
+                ),
+                'expectedCode' => 500,
+            ],
+            // Client error with custom code
+            [
+                'exception' => new ClientException(
+                    'Forbidden',
+                    new Request('GET', 'http://example.com'),
+                    new Response(403)
+                ),
+                'expectedCode' => 403,
+            ],
+            // Server error with custom code
+            [
+                'exception' => new ServerException(
+                    'Service Unavailable',
+                    new Request('GET', 'http://example.com'),
+                    new Response(503)
+                ),
+                'expectedCode' => 503,
+            ],
+        ];
+
+        foreach ($tests as $test) {
+            $this->mockHandler->append($test['exception']);
+            $client   = new MiddlewareClient(['handler' => $this->handlerStack], $this->logger);
+            $response = $client->makeRequest('GET', 'http://example.com');
+
+            $this->assertEquals(
+                $test['expectedCode'],
+                $response->getStatusCode(),
+                'Failed for exception: ' . get_class($test['exception'])
+            );
+        }
     }
 
     public function testGetLastTransaction()

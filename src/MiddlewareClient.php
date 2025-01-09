@@ -25,6 +25,8 @@ use GuzzleHttp\HandlerStack;
 use GuzzleHttp\Middleware;
 use GuzzleHttp\Exception\RequestException;
 use GuzzleHttp\Exception\ConnectException;
+use GuzzleHttp\Exception\ClientException;
+use GuzzleHttp\Exception\ServerException;
 use GuzzleHttp\Psr7\Response;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
@@ -356,23 +358,26 @@ class MiddlewareClient
             'trace'     => $e->getTraceAsString(),
         ];
 
-        if ($e instanceof RequestException) {
-            $context['request'] = $e->getRequest();
-            if ($e->hasResponse()) {
-                $context['response'] = $e->getResponse();
-            }
+        // If exception has a response, use it to preserve original error details
+        if ($e instanceof RequestException && $e->hasResponse()) {
+            return $e->getResponse();
         }
 
-        // Log the error
+        // For exceptions without responses, map to appropriate codes
+        $statusCode = match (true) {
+            $e instanceof ConnectException => 408,  // Timeout/connection issues
+            $e instanceof ClientException  => $e->getCode() ?: 400,  // Use original code if available for 4xx errors
+            $e instanceof ServerException  => $e->getCode() ?: 500,  // Use original code if available for 5xx errors
+            default                        => 500                         // Unknown errors
+        };
+
         $this->logger->error('Request failed', $context);
 
-        return $e instanceof RequestException && $e->hasResponse()
-            ? $e->getResponse()
-            : new Response(
-                408,
-                [],
-                json_encode(['error' => $e->getMessage()])
-            );
+        return new Response(
+            $statusCode,
+            [],
+            json_encode(['error' => $e->getMessage()])
+        );
     }
 
     /**

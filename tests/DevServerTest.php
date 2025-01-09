@@ -92,4 +92,64 @@ class DevServerTest extends TestCase
         $this->assertEquals('ok', $data['status']);
         $this->assertEquals('Redirect chain completed', $data['message']);
     }
+
+    public function testErrorEndpoint(): void
+    {
+        $client = new MiddlewareClient([], $this->logger);
+
+        // Test 404 error
+        $response = $client->makeRequest('GET', 'http://localhost:8000/error/404');
+        $this->assertEquals(404, $response->getStatusCode());
+        $body = json_decode((string)$response->getBody(), true);
+        $this->assertEquals('error', $body['status']);
+        $this->assertEquals(404, $body['code']);
+        $this->assertEquals('Error response with code 404', $body['message']);
+
+        // Test 500 error
+        $response = $client->makeRequest('GET', 'http://localhost:8000/error/500');
+        $this->assertEquals(500, $response->getStatusCode());
+        $body = json_decode((string)$response->getBody(), true);
+        $this->assertEquals('error', $body['status']);
+        $this->assertEquals(500, $body['code']);
+
+        // Test invalid error code returns 404
+        $response = $client->makeRequest('GET', 'http://localhost:8000/error/999');
+        $this->assertEquals(404, $response->getStatusCode());
+    }
+
+    public function testDelayEndpoint(): void
+    {
+        // Test float delay (0.5 seconds)
+        $startTime = microtime(true);
+        $response  = $this->client->makeRequest('GET', '/delay/0.5');
+        $endTime   = microtime(true);
+
+        $this->assertEquals(200, $response->getStatusCode());
+        $body = json_decode((string)$response->getBody(), true);
+        $this->assertEquals('ok', $body['status']);
+        $this->assertEquals(0.5, $body['delay']);
+        $this->assertGreaterThanOrEqual(0.5, $endTime - $startTime);
+        $this->assertLessThan(1.0, $endTime - $startTime);
+    }
+
+    public function testDelayEndpointTimeout(): void
+    {
+        // Create client with shorter timeout
+        $client = new MiddlewareClient([
+            'base_uri' => 'http://localhost:8000',
+            'timeout'  => 1,
+        ], $this->logger);
+
+        // Request with delay longer than timeout
+        $response = $client->makeRequest('GET', '/delay/2');
+
+        // Verify timeout response
+        $this->assertEquals(408, $response->getStatusCode());
+        $this->assertEquals('Request Time-out', $response->getReasonPhrase());
+        $this->assertJson((string)$response->getBody());
+
+        $body = json_decode((string)$response->getBody(), true);
+        $this->assertArrayHasKey('error', $body);
+        $this->assertStringContainsString('timed out', $body['error']);
+    }
 }
