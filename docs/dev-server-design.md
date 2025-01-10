@@ -19,8 +19,9 @@ This is the plan to create a development server to demonstrate and verify Guzzle
 
 #### File Structure
 ```
+public/
+└── dev-server.php                # Simple procedural endpoint handler
 src/
-├── dev-server.php                # Simple procedural endpoint handler
 ├── MiddlewareClient.php          # Existing core middleware client
 └── functions.php                 # Existing helper functions
 ```
@@ -30,7 +31,7 @@ src/
 Start the built-in PHP development server:
 ```bash
 # From project root
-php -S localhost:8000 src/dev-server.php
+php -S localhost:8000 public/dev-server.php
 ```
 
 This will:

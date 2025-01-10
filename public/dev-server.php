@@ -5,14 +5,14 @@
  * It will be used to test the library's ability to handle redirects, logging, and debugging output.
  *
  * To start the server, run the following command:
- * php -S localhost:8000 src/dev-server.php
+ * php -S localhost:8000 public/dev-server.php
  *
  * This will start a local server on port 8000 and use dev-server.php as the router for all requests.
  */
 
 declare(strict_types=1);
 
-require __DIR__ . '/../bootstrap/app.php';
+require __DIR__ . '/../vendor/autoload.php';
 
 use FOfX\Helper;
 
