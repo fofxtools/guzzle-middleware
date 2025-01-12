@@ -94,6 +94,108 @@ function handleRequest(): void
         ]);
     }
 
+    // POST endpoint
+    if ($path === '/api/post' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+        $contentType = $_SERVER['CONTENT_TYPE'] ?? '';
+
+        // Handle JSON
+        if (strpos($contentType, 'application/json') !== false) {
+            $input = json_decode(file_get_contents('php://input'), true);
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                $sendResponse([
+                    'status'  => 'error',
+                    'message' => 'Invalid JSON provided',
+                ], 400);
+            }
+        }
+        // Handle form data
+        elseif (strpos($contentType, 'application/x-www-form-urlencoded') !== false) {
+            $input = $_POST;
+        }
+        // Invalid content type
+        else {
+            $sendResponse([
+                'status'  => 'error',
+                'message' => 'Unsupported content type',
+            ], 400);
+        }
+
+        $sendResponse([
+            'status'       => 'ok',
+            'data'         => $input ?? null,
+            'content_type' => $contentType,
+        ]);
+    }
+
+    // Upload endpoint
+    if ($path === '/api/upload' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+        if (empty($_FILES['file'])) {
+            $sendResponse([
+                'status'  => 'error',
+                'message' => 'No file uploaded',
+            ], 400);
+        }
+
+        $file = $_FILES['file'];
+
+        // Basic error checking
+        if ($file['error'] !== UPLOAD_ERR_OK) {
+            $sendResponse([
+                'status'  => 'error',
+                'message' => 'Upload failed',
+                'code'    => $file['error'],
+            ], 400);
+        }
+
+        $sendResponse([
+            'status'  => 'ok',
+            'message' => 'File uploaded successfully',
+            'file'    => [
+                'name' => $file['name'],
+                'size' => $file['size'],
+                'type' => $file['type'],
+            ],
+        ]);
+    }
+
+    // Auth endpoint
+    if ($path === '/api/auth') {
+        // Get Authorization header
+        $authHeader = $_SERVER['HTTP_AUTHORIZATION'] ?? '';
+
+        // Handle Basic Auth
+        if (strpos($authHeader, 'Basic ') === 0) {
+            $credentials           = base64_decode(substr($authHeader, 6));
+            [$username, $password] = explode(':', $credentials);
+
+            if ($username === 'test' && $password === 'password') {
+                $sendResponse([
+                    'status'  => 'ok',
+                    'message' => 'Basic auth successful',
+                    'user'    => $username,
+                ]);
+            }
+        }
+
+        // Handle Bearer Token
+        if (strpos($authHeader, 'Bearer ') === 0) {
+            $token = substr($authHeader, 7);
+
+            if ($token === 'valid-token') {
+                $sendResponse([
+                    'status'  => 'ok',
+                    'message' => 'Token auth successful',
+                ]);
+            }
+        }
+
+        // Auth failed
+        $sendResponse([
+            'status'  => 'error',
+            'message' => 'Authentication failed',
+        ], 401);
+    }
+
     // Default 404 response
     $sendResponse([
         'status'  => 'error',

@@ -44,7 +44,7 @@ class DevServerTest extends TestCase
         } catch (ConnectException $e) {
             $this->markTestSkipped(
                 'Development server is not running. Start it with: ' .
-                'php -S localhost:8000 src/dev-server.php'
+                'php -S localhost:8000 public/dev-server.php'
             );
         }
 
@@ -151,5 +151,147 @@ class DevServerTest extends TestCase
         $body = json_decode((string)$response->getBody(), true);
         $this->assertArrayHasKey('error', $body);
         $this->assertStringContainsString('timed out', $body['error']);
+    }
+
+    public function testPostEndpointWithJson(): void
+    {
+        // Test JSON POST
+        $jsonData = ['name' => 'test', 'value' => 123];
+        $response = $this->client->makeRequest('POST', '/api/post', [
+            'json'    => $jsonData,
+            'headers' => ['Content-Type' => 'application/json'],
+        ]);
+
+        $this->assertEquals(200, $response->getStatusCode());
+        $data = json_decode((string)$response->getBody(), true);
+        $this->assertEquals('ok', $data['status']);
+        $this->assertEquals($jsonData, $data['data']);
+    }
+
+    public function testPostEndpointWithFormData(): void
+    {
+        // Test form POST
+        $formData = ['field1' => 'value1', 'field2' => 'value2'];
+        $response = $this->client->makeRequest('POST', '/api/post', [
+            'form_params' => $formData,
+        ]);
+
+        $this->assertEquals(200, $response->getStatusCode());
+        $data = json_decode((string)$response->getBody(), true);
+        $this->assertEquals('ok', $data['status']);
+        $this->assertEquals($formData, $data['data']);
+    }
+
+    public function testPostEndpointWithInvalidContentType(): void
+    {
+        // Test invalid content type
+        $response = $this->client->makeRequest('POST', '/api/post', [
+            'body'    => 'raw data',
+            'headers' => ['Content-Type' => 'text/plain'],
+        ]);
+
+        $this->assertEquals(400, $response->getStatusCode());
+        $data = json_decode((string)$response->getBody(), true);
+        $this->assertEquals('error', $data['status']);
+    }
+
+    public function testUploadEndpoint(): void
+    {
+        // Create a test file
+        $filename = 'test.txt';
+        $content  = 'Test file content';
+        $tmpFile  = sys_get_temp_dir() . '/' . $filename;
+        file_put_contents($tmpFile, $content);
+
+        // Upload the file
+        $response = $this->client->makeRequest('POST', '/api/upload', [
+            'multipart' => [
+                [
+                    'name'     => 'file',
+                    'contents' => fopen($tmpFile, 'r'),
+                    'filename' => $filename,
+                ],
+            ],
+        ]);
+
+        // Clean up
+        unlink($tmpFile);
+
+        // Verify response
+        $this->assertEquals(200, $response->getStatusCode());
+        $data = json_decode((string)$response->getBody(), true);
+        $this->assertEquals('ok', $data['status']);
+        $this->assertEquals($filename, $data['file']['name']);
+        $this->assertEquals(strlen($content), $data['file']['size']);
+        $this->assertEquals('text/plain', $data['file']['type']);
+    }
+
+    public function testUploadEndpointWithNoFile(): void
+    {
+        $response = $this->client->makeRequest('POST', '/api/upload');
+
+        $this->assertEquals(400, $response->getStatusCode());
+        $data = json_decode((string)$response->getBody(), true);
+        $this->assertEquals('error', $data['status']);
+        $this->assertEquals('No file uploaded', $data['message']);
+    }
+
+    public function testBasicAuth(): void
+    {
+        // Test successful basic auth
+        $response = $this->client->makeRequest('GET', '/api/auth', [
+            'headers' => [
+                'Authorization' => 'Basic ' . base64_encode('test:password'),
+            ],
+        ]);
+
+        $this->assertEquals(200, $response->getStatusCode());
+        $data = json_decode((string)$response->getBody(), true);
+        $this->assertEquals('ok', $data['status']);
+        $this->assertEquals('Basic auth successful', $data['message']);
+        $this->assertEquals('test', $data['user']);
+
+        // Test failed basic auth
+        $response = $this->client->makeRequest('GET', '/api/auth', [
+            'headers' => [
+                'Authorization' => 'Basic ' . base64_encode('wrong:wrong'),
+            ],
+        ]);
+
+        $this->assertEquals(401, $response->getStatusCode());
+    }
+
+    public function testTokenAuth(): void
+    {
+        // Test successful token auth
+        $response = $this->client->makeRequest('GET', '/api/auth', [
+            'headers' => [
+                'Authorization' => 'Bearer valid-token',
+            ],
+        ]);
+
+        $this->assertEquals(200, $response->getStatusCode());
+        $data = json_decode((string)$response->getBody(), true);
+        $this->assertEquals('ok', $data['status']);
+        $this->assertEquals('Token auth successful', $data['message']);
+
+        // Test failed token auth
+        $response = $this->client->makeRequest('GET', '/api/auth', [
+            'headers' => [
+                'Authorization' => 'Bearer invalid-token',
+            ],
+        ]);
+
+        $this->assertEquals(401, $response->getStatusCode());
+    }
+
+    public function testNoAuth(): void
+    {
+        $response = $this->client->makeRequest('GET', '/api/auth');
+
+        $this->assertEquals(401, $response->getStatusCode());
+        $data = json_decode((string)$response->getBody(), true);
+        $this->assertEquals('error', $data['status']);
+        $this->assertEquals('Authentication failed', $data['message']);
     }
 }
