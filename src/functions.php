@@ -117,7 +117,7 @@ function createGuzzleOptions(bool $rotateUserAgent = false): array
 }
 
 /**
- * Helper function to print the output from MiddlewareClient or makeMiddlewareRequest
+ * Helper function to print the output from MiddlewareClient
  *
  * @param array            $output    The output array
  * @param bool             $truncate  Whether to truncate long outputs (default: true)

@@ -365,10 +365,10 @@ class MiddlewareClient
 
         // For exceptions without responses, map to appropriate codes
         $statusCode = match (true) {
-            $e instanceof ConnectException => 408,  // Timeout/connection issues
+            $e instanceof ConnectException => 408,                   // Timeout/connection issues
             $e instanceof ClientException  => $e->getCode() ?: 400,  // Use original code if available for 4xx errors
             $e instanceof ServerException  => $e->getCode() ?: 500,  // Use original code if available for 5xx errors
-            default                        => 500                         // Unknown errors
+            default                        => 500                    // Unknown errors
         };
 
         $this->logger->error('Request failed', $context);
@@ -381,13 +381,32 @@ class MiddlewareClient
     }
 
     /**
+     * Retrieve or calculate the content length of a response.
+     *
+     * @param ResponseInterface $response the response to get the content length from
+     *
+     * @return int The content length
+     */
+    public function getContentLength(ResponseInterface $response): int
+    {
+        // First try Content-Length header
+        $headerLength = $response->getHeaderLine('Content-Length');
+        if (!empty($headerLength)) {
+            return (int) $headerLength;
+        }
+
+        // If no header, calculate from body
+        return strlen((string) $response->getBody());
+    }
+
+    /**
      * Retrieve the most recent transaction's output.
      *
      * Uses array_key_last() to access the latest transaction since the history might
      * contain redirects or duplicate requests. Always encodes headers as JSON for
      * consistency and readability in debugging and logging.
      *
-     * @return array formatted output of the most recent transaction
+     * @return array Formatted output of the most recent transaction
      */
     public function getLastTransaction(): array
     {
@@ -419,7 +438,7 @@ class MiddlewareClient
                     'statusCode'    => $response->getStatusCode(),
                     'headers'       => json_encode($response->getHeaders()),
                     'body'          => (string) $response->getBody(),
-                    'contentLength' => (int) $response->getHeaderLine('Content-Length'),
+                    'contentLength' => $this->getContentLength($response),
                     'reasonPhrase'  => $response->getReasonPhrase(),
                 ],
             ];
@@ -467,7 +486,7 @@ class MiddlewareClient
                     'statusCode'    => $response->getStatusCode(),
                     'headers'       => json_encode($response->getHeaders()),
                     'body'          => (string) $response->getBody(),
-                    'contentLength' => (int) $response->getHeaderLine('Content-Length'),
+                    'contentLength' => $this->getContentLength($response),
                     'reasonPhrase'  => $response->getReasonPhrase(),
                 ],
             ];
@@ -548,7 +567,7 @@ class MiddlewareClient
             $summary['request_protocols'][]        = $request->getProtocolVersion();
             $summary['request_targets'][]          = $request->getRequestTarget();
             $summary['response_status_codes'][]    = $response->getStatusCode();
-            $summary['response_content_lengths'][] = (int)$response->getHeaderLine('Content-Length');
+            $summary['response_content_lengths'][] = $this->getContentLength($response);
             $summary['response_reason_phrases'][]  = $response->getReasonPhrase();
         }
 

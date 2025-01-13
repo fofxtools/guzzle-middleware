@@ -29,7 +29,9 @@ function handleRequest(): void
     $sendResponse = function (array $data, int $status = 200) {
         http_response_code($status);
         header('Content-Type: application/json');
-        echo json_encode($data);
+        $body = json_encode($data);
+        header('Content-Length: ' . strlen($body));
+        echo $body;
         exit;
     };
 
@@ -256,6 +258,45 @@ function handleRequest(): void
             'status'    => 'ok',
             'message'   => 'Request processed',
             'remaining' => 5 - $current['requests'],
+        ]);
+    }
+
+    // Proxy check endpoint
+    if ($path === '/api/proxy-check') {
+        $remote_addr       = $_SERVER['REMOTE_ADDR'];
+        $x_forwarded_for   = $_SERVER['HTTP_X_FORWARDED_FOR'] ?? null;
+        $x_forwarded_host  = $_SERVER['HTTP_X_FORWARDED_HOST'] ?? null;
+        $x_forwarded_proto = $_SERVER['HTTP_X_FORWARDED_PROTO'] ?? null;
+        $forwarded         = $_SERVER['HTTP_FORWARDED'] ?? null;
+        $via               = $_SERVER['HTTP_VIA'] ?? null;
+        $server_port       = $_SERVER['SERVER_PORT'] ?? null;
+        $server_protocol   = $_SERVER['SERVER_PROTOCOL'] ?? null;
+
+        $message = "Remote Address: $remote_addr\n";
+        $message .= "X-Forwarded-For: $x_forwarded_for\n";
+        $message .= "X-Forwarded-Host: $x_forwarded_host\n";
+        $message .= "X-Forwarded-Proto: $x_forwarded_proto\n";
+        $message .= "Forwarded: $forwarded\n";
+        $message .= "Via: $via\n";
+        $message .= "Server Port: $server_port\n";
+        $message .= "Server Protocol: $server_protocol\n";
+
+        $sendResponse([
+            'status'    => 'ok',
+            'client_ip' => $remote_addr,
+            'headers'   => [
+                'x_forwarded_for'   => $x_forwarded_for,
+                'x_forwarded_host'  => $x_forwarded_host,
+                'x_forwarded_proto' => $x_forwarded_proto,
+                'forwarded'         => $forwarded,
+                'via'               => $via,
+            ],
+            'server' => [
+                'remote_addr'     => $remote_addr,
+                'server_port'     => $server_port,
+                'server_protocol' => $server_protocol,
+            ],
+            'message' => $message,
         ]);
     }
 

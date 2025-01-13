@@ -407,6 +407,16 @@ class MiddlewareClientTest extends TestCase
         }
     }
 
+    public function testGetContentLength()
+    {
+        $this->mockHandler->append(new Response(200, ['Content-Length' => '100'], 'Hello, World'));
+
+        $client   = new MiddlewareClient(['handler' => $this->handlerStack], $this->logger);
+        $response = $client->makeRequest('GET', 'http://example.com');
+
+        $this->assertEquals(100, $client->getContentLength($response));
+    }
+
     public function testGetLastTransaction()
     {
         $this->mockHandler->append(new Response(200, ['Content-Type' => 'application/json'], '{"key":"value"}'));

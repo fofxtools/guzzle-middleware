@@ -7,6 +7,7 @@ namespace FOfX\GuzzleMiddleware\Tests;
 use PHPUnit\Framework\TestCase;
 use FOfX\GuzzleMiddleware\MiddlewareClient;
 use GuzzleHttp\Exception\ConnectException;
+use GuzzleHttp\Psr7\Request;
 use Monolog\Handler\TestHandler;
 use Monolog\Logger;
 
@@ -35,6 +36,14 @@ class DevServerTest extends TestCase
         // Check if dev server is running
         try {
             $response = $this->client->makeRequest('GET', '/api/test');
+            // First check for connection issues
+            if ($response->getStatusCode() === 408) {
+                throw new ConnectException(
+                    'Connection refused',
+                    new Request('GET', '/api/test')
+                );
+            }
+            // Then check for other status codes
             if ($response->getStatusCode() !== 200) {
                 $this->markTestSkipped(
                     'Development server returned unexpected status code: ' .
@@ -349,5 +358,49 @@ class DevServerTest extends TestCase
         $response = $this->client->makeRequest('GET', '/api/ratelimit');
         $this->assertEquals(200, $response->getStatusCode());
         $this->assertEquals('4', $response->getHeaderLine('X-RateLimit-Remaining'));
+    }
+
+    public function testProxyCheckEndpoint(): void
+    {
+        $response    = $this->client->makeRequest('GET', 'http://localhost:8000/api/proxy-check');
+        $transaction = $this->client->getLastTransaction();
+
+        // Verify response structure
+        $responseData = json_decode($transaction[0]['response']['body'], true);
+        $this->assertIsArray($responseData);
+        $this->assertArrayHasKey('status', $responseData);
+        $this->assertArrayHasKey('client_ip', $responseData);
+        $this->assertArrayHasKey('headers', $responseData);
+        $this->assertArrayHasKey('server', $responseData);
+
+        // Verify headers structure
+        $this->assertArrayHasKey('x_forwarded_for', $responseData['headers']);
+        $this->assertArrayHasKey('x_forwarded_host', $responseData['headers']);
+        $this->assertArrayHasKey('x_forwarded_proto', $responseData['headers']);
+        $this->assertArrayHasKey('forwarded', $responseData['headers']);
+        $this->assertArrayHasKey('via', $responseData['headers']);
+
+        // Verify server info
+        $this->assertArrayHasKey('remote_addr', $responseData['server']);
+        $this->assertArrayHasKey('server_port', $responseData['server']);
+        $this->assertArrayHasKey('server_protocol', $responseData['server']);
+    }
+
+    public function testProxyCheckResponse(): void
+    {
+        $response    = $this->client->makeRequest('GET', 'http://localhost:8000/api/proxy-check');
+        $transaction = $this->client->getLastTransaction();
+
+        // Verify response code and content type
+        $this->assertEquals(200, $transaction[0]['response']['statusCode']);
+        $headers = json_decode($transaction[0]['response']['headers'], true);
+        $this->assertStringContainsString('application/json', $headers['Content-Type'][0]);
+
+        // Verify response data
+        $responseData = json_decode($transaction[0]['response']['body'], true);
+        $this->assertEquals('ok', $responseData['status']);
+        $this->assertEquals('::1', $responseData['client_ip']); // localhost IPv6
+        $this->assertEquals('8000', $responseData['server']['server_port']);
+        $this->assertEquals('HTTP/1.1', $responseData['server']['server_protocol']);
     }
 }
