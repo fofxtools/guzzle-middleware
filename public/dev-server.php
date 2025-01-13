@@ -196,6 +196,69 @@ function handleRequest(): void
         ], 401);
     }
 
+    // Rate limit endpoint
+    if ($path === '/api/ratelimit') {
+        $storageFile = sys_get_temp_dir() . '/rate_limits.json';
+        $ip          = $_SERVER['REMOTE_ADDR'];
+        $now         = time();
+
+        // Load current limits
+        $limits = file_exists($storageFile)
+            ? json_decode(file_get_contents($storageFile), true)
+            : [];
+
+        // Clean old entries
+        foreach ($limits as $key => $data) {
+            if ($data['window_start'] < ($now - 60)) {
+                unset($limits[$key]);
+            }
+        }
+
+        // Get/initialize current IP data
+        $current = $limits[$ip] ?? [
+            'requests'     => 0,
+            'window_start' => $now,
+        ];
+
+        // Reset if window expired
+        if ($current['window_start'] < ($now - 60)) {
+            $current = [
+                'requests'     => 0,
+                'window_start' => $now,
+            ];
+        }
+
+        // Check limit
+        if ($current['requests'] >= 5) {
+            $reset = $current['window_start'] + 60;
+            header('X-RateLimit-Limit: 5');
+            header('X-RateLimit-Remaining: 0');
+            header('X-RateLimit-Reset: ' . $reset);
+
+            $sendResponse([
+                'status'      => 'error',
+                'message'     => 'Rate limit exceeded',
+                'retry_after' => $reset - $now,
+            ], 429);
+        }
+
+        // Update counters
+        $current['requests']++;
+        $limits[$ip] = $current;
+        file_put_contents($storageFile, json_encode($limits));
+
+        // Add rate limit headers
+        header('X-RateLimit-Limit: 5');
+        header('X-RateLimit-Remaining: ' . (5 - $current['requests']));
+        header('X-RateLimit-Reset: ' . ($current['window_start'] + 60));
+
+        $sendResponse([
+            'status'    => 'ok',
+            'message'   => 'Request processed',
+            'remaining' => 5 - $current['requests'],
+        ]);
+    }
+
     // Default 404 response
     $sendResponse([
         'status'  => 'error',

@@ -294,4 +294,60 @@ class DevServerTest extends TestCase
         $this->assertEquals('error', $data['status']);
         $this->assertEquals('Authentication failed', $data['message']);
     }
+
+    public function testRateLimitEndpoint(): void
+    {
+        // Clean up any existing rate limit file
+        $storageFile = sys_get_temp_dir() . '/rate_limits.json';
+        if (file_exists($storageFile)) {
+            unlink($storageFile);
+        }
+
+        // Test successful requests
+        for ($i = 1; $i <= 5; $i++) {
+            $response = $this->client->makeRequest('GET', '/api/ratelimit');
+
+            $this->assertEquals(200, $response->getStatusCode());
+            $this->assertEquals('5', $response->getHeaderLine('X-RateLimit-Limit'));
+            $this->assertEquals((5 - $i), (int)$response->getHeaderLine('X-RateLimit-Remaining'));
+
+            $data = json_decode((string)$response->getBody(), true);
+            $this->assertEquals('ok', $data['status']);
+            $this->assertEquals(5 - $i, $data['remaining']);
+        }
+
+        // Test rate limit exceeded
+        $response = $this->client->makeRequest('GET', '/api/ratelimit');
+        $this->assertEquals(429, $response->getStatusCode());
+        $this->assertEquals('0', $response->getHeaderLine('X-RateLimit-Remaining'));
+
+        $data = json_decode((string)$response->getBody(), true);
+        $this->assertEquals('error', $data['status']);
+        $this->assertEquals('Rate limit exceeded', $data['message']);
+        $this->assertArrayHasKey('retry_after', $data);
+    }
+
+    public function testRateLimitReset(): void
+    {
+        // Clean up any existing rate limit file
+        $storageFile = sys_get_temp_dir() . '/rate_limits.json';
+        if (file_exists($storageFile)) {
+            unlink($storageFile);
+        }
+
+        // Make one request
+        $response = $this->client->makeRequest('GET', '/api/ratelimit');
+        $this->assertEquals(200, $response->getStatusCode());
+
+        // Modify stored window_start to be 61 seconds ago
+        $limits                      = json_decode(file_get_contents($storageFile), true);
+        $ip                          = array_key_first($limits);
+        $limits[$ip]['window_start'] = time() - 61;
+        file_put_contents($storageFile, json_encode($limits));
+
+        // Next request should reset counter
+        $response = $this->client->makeRequest('GET', '/api/ratelimit');
+        $this->assertEquals(200, $response->getStatusCode());
+        $this->assertEquals('4', $response->getHeaderLine('X-RateLimit-Remaining'));
+    }
 }

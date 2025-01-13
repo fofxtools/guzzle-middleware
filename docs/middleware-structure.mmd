@@ -1,0 +1,28 @@
+%% Component Structure
+classDiagram
+    class MiddlewareClient {
+        -client: ClientInterface
+        -container: array
+        -debug: array
+        -logger: LoggerInterface
+        +makeRequest()
+        +getLastTransaction()
+        +getAllTransactions()
+        +reset()
+    }
+    class HandlerStack {
+        +push()
+        +create()
+    }
+    class Logger {
+        +info()
+        +error()
+    }
+    class Response {
+        +getStatusCode()
+        +getHeaders()
+        +getBody()
+    }
+    MiddlewareClient --> HandlerStack
+    MiddlewareClient --> Logger
+    MiddlewareClient --> Response 

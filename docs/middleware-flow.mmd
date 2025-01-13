@@ -1,0 +1,26 @@
+%% Guzzle Middleware Client Flow
+
+sequenceDiagram
+    participant CR as Client Request
+    participant MC as MiddlewareClient
+    participant HS as HandlerStack
+    participant HM as History Middleware
+    participant GC as Guzzle Client
+    participant R as Response
+    
+    CR->>MC: makeRequest()
+    MC->>HS: Create/Use Stack
+    MC->>HM: Add Middleware
+    MC->>GC: Send Request
+    
+    alt Success
+        GC->>R: Get Response
+        R->>HM: Store History
+        HM->>MC: Return Response
+    else Exception
+        GC->>MC: Throw Exception
+        MC->>MC: Handle Exception
+        MC->>R: Create Error Response
+        R->>HM: Store History
+        HM->>MC: Return Response
+    end
