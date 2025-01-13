@@ -446,12 +446,12 @@ class FunctionsTest extends TestCase
         $output = \FOfX\GuzzleMiddleware\makeMiddlewareRequest('GET', 'http://example.com', $config, $options, $logger, false);
 
         $this->assertIsArray($output);
-        $this->assertCount(1, $output); // Ensure that the output has 1 request
-        $this->assertEquals('Hello, World', $output[0]['response']['body']);
-        $this->assertEquals(200, $output[0]['response']['statusCode']);
+        $this->assertCount(2, $output); // Ensure 2 elements: request and response
+        $this->assertEquals('Hello, World', $output['response']['body']);
+        $this->assertEquals(200, $output['response']['statusCode']);
 
         // Decode the JSON headers to access them as an array
-        $headers = json_decode($output[0]['response']['headers'], true);
+        $headers = json_decode($output['response']['headers'], true);
         $this->assertEquals('Bar', $headers['X-Foo'][0]);
     }
 
@@ -463,8 +463,8 @@ class FunctionsTest extends TestCase
         $output = \FOfX\GuzzleMiddleware\makeMiddlewareRequest('GET', 'http://example.com', [], [], $this->logger);
 
         $this->assertIsArray($output);
-        $this->assertCount(1, $output); // Ensure only 1 transaction is returned
-        $this->assertEquals(200, $output[0]['response']['statusCode']);
+        $this->assertCount(2, $output); // Ensure 2 elements: request and response
+        $this->assertEquals(200, $output['response']['statusCode']);
     }
 
     public function testMakeMiddlewareRequestWithoutLogger()
@@ -477,25 +477,25 @@ class FunctionsTest extends TestCase
 
         // Ensure output is an array and contains request/response data
         $this->assertIsArray($output);
-        $this->assertArrayHasKey('request', $output[0]);
-        $this->assertArrayHasKey('response', $output[0]);
+        $this->assertArrayHasKey('request', $output);
+        $this->assertArrayHasKey('response', $output);
 
         // Decode the request headers JSON string
-        $requestHeaders = json_decode($output[0]['request']['headers'], true);
+        $requestHeaders = json_decode($output['request']['headers'], true);
 
         // Ensure the request headers are correctly parsed as an array
         $this->assertIsArray($requestHeaders);
         $this->assertArrayHasKey('User-Agent', $requestHeaders);
 
         // Decode the response headers JSON string
-        $responseHeaders = json_decode($output[0]['response']['headers'], true);
+        $responseHeaders = json_decode($output['response']['headers'], true);
 
         // Ensure the response headers are correctly parsed as an array
         $this->assertIsArray($responseHeaders);
         $this->assertArrayHasKey('X-Foo', $responseHeaders);
         $this->assertEquals('Bar', $responseHeaders['X-Foo'][0]);
 
-        $this->assertEquals('Response body', $output[0]['response']['body']);
+        $this->assertEquals('Response body', $output['response']['body']);
     }
 
     public function testMakeMiddlewareRequestWithLogger()
@@ -533,25 +533,25 @@ class FunctionsTest extends TestCase
 
         // Ensure output is an array and contains request/response data
         $this->assertIsArray($output);
-        $this->assertArrayHasKey('request', $output[0]);
-        $this->assertArrayHasKey('response', $output[0]);
+        $this->assertArrayHasKey('request', $output);
+        $this->assertArrayHasKey('response', $output);
 
         // Decode the request headers JSON string
-        $requestHeaders = json_decode($output[0]['request']['headers'], true);
+        $requestHeaders = json_decode($output['request']['headers'], true);
 
         // Check specific parts of the request
-        $this->assertEquals('GET', $output[0]['request']['method']);
-        $this->assertEquals('http://example.com', $output[0]['request']['url']);
+        $this->assertEquals('GET', $output['request']['method']);
+        $this->assertEquals('http://example.com', $output['request']['url']);
         $this->assertIsArray($requestHeaders);
         $this->assertArrayHasKey('User-Agent', $requestHeaders);
 
         // Decode the response headers JSON string
-        $responseHeaders = json_decode($output[0]['response']['headers'], true);
+        $responseHeaders = json_decode($output['response']['headers'], true);
         $this->assertIsArray($responseHeaders);
         $this->assertArrayHasKey('X-Foo', $responseHeaders);
         $this->assertEquals('Bar', $responseHeaders['X-Foo'][0]);
 
-        $this->assertEquals('Response body', $output[0]['response']['body']);
+        $this->assertEquals('Response body', $output['response']['body']);
     }
 
     public function testMakeMiddlewareRequestWithConfigAndOptions()
@@ -566,31 +566,31 @@ class FunctionsTest extends TestCase
 
         // Ensure output is an array and contains request/response data
         $this->assertIsArray($output);
-        $this->assertArrayHasKey('request', $output[0]);
-        $this->assertArrayHasKey('response', $output[0]);
+        $this->assertArrayHasKey('request', $output);
+        $this->assertArrayHasKey('response', $output);
 
         // Decode the request headers JSON string
-        $requestHeaders = json_decode($output[0]['request']['headers'], true);
+        $requestHeaders = json_decode($output['request']['headers'], true);
 
         // Check specific parts of the request
-        $this->assertEquals('GET', $output[0]['request']['method']);
-        $this->assertEquals('http://example.com', $output[0]['request']['url']);
+        $this->assertEquals('GET', $output['request']['method']);
+        $this->assertEquals('http://example.com', $output['request']['url']);
 
         // Ensure the headers are correctly parsed as an array
         $this->assertIsArray($requestHeaders);
         $this->assertArrayHasKey('User-Agent', $requestHeaders);
         $this->assertEquals('TestAgent', $requestHeaders['User-Agent'][0]);
 
-        $this->assertEquals('', $output[0]['request']['body']);  // No body sent in this case
+        $this->assertEquals('', $output['request']['body']);  // No body sent in this case
 
         // Decode the response headers JSON string
-        $responseHeaders = json_decode($output[0]['response']['headers'], true);
+        $responseHeaders = json_decode($output['response']['headers'], true);
 
         // Ensure the response headers are correctly parsed as an array
         $this->assertIsArray($responseHeaders);
         $this->assertArrayHasKey('X-Foo', $responseHeaders);
         $this->assertEquals('Bar', $responseHeaders['X-Foo'][0]);
 
-        $this->assertEquals('Response body', $output[0]['response']['body']);
+        $this->assertEquals('Response body', $output['response']['body']);
     }
 }

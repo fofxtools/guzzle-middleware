@@ -64,7 +64,7 @@ Array
             [response] => Array
                 (
                     [statusCode] => 302
-                    [headers] => {"Date":["Mon, 13 Jan 2025 17:07:30 GMT"],"Content-Type":["text\/html; charset=utf-8"],"Content-Length":["247"],"Connection":["keep-alive"],"Server":["gunicorn\/19.9.0"],"Location":["\/relative-redirect\/1"],"Access-Control-Allow-Origin":["*"],"Access-Control-Allow-Credentials":["true"]}
+                    [headers] => {"Date":["Mon, 13 Jan 2025 19:03:26 GMT"],"Content-Type":["text\/html; charset=utf-8"],"Content-Length":["247"],"Connection":["keep-alive"],"Server":["gunicorn\/19.9.0"],"Location":["\/relative-redirect\/1"],"Access-Control-Allow-Origin":["*"],"Access-Control-Allow-Credentials":["true"]}
                     [body] => <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
 <title>Redirecting...</title>
 <h1>Redirecting...</h1>
@@ -90,7 +90,7 @@ Array
             [response] => Array
                 (
                     [statusCode] => 302
-                    [headers] => {"Date":["Mon, 13 Jan 2025 17:07:30 GMT"],"Content-Type":["text\/html; charset=utf-8"],"Content-Length":["0"],"Connection":["keep-alive"],"Server":["gunicorn\/19.9.0"],"Location":["\/get"],"Access-Control-Allow-Origin":["*"],"Access-Control-Allow-Credentials":["true"]}
+                    [headers] => {"Date":["Mon, 13 Jan 2025 19:03:28 GMT"],"Content-Type":["text\/html; charset=utf-8"],"Content-Length":["0"],"Connection":["keep-alive"],"Server":["gunicorn\/19.9.0"],"Location":["\/get"],"Access-Control-Allow-Origin":["*"],"Access-Control-Allow-Credentials":["true"]}
                     [body] => 
                     [contentLength] => 0
                     [reasonPhrase] => FOUND
@@ -113,13 +113,13 @@ Array
             [response] => Array
                 (
                     [statusCode] => 200
-                    [headers] => {"Date":["Mon, 13 Jan 2025 17:07:31 GMT"],"Content-Type":["application\/json"],"Content-Length":["233"],"Connection":["keep-alive"],"Server":["gunicorn\/19.9.0"],"Access-Control-Allow-Origin":["*"],"Access-Control-Allow-Credentials":["true"]}
+                    [headers] => {"Date":["Mon, 13 Jan 2025 19:03:30 GMT"],"Content-Type":["application\/json"],"Content-Length":["233"],"Connection":["keep-alive"],"Server":["gunicorn\/19.9.0"],"Access-Control-Allow-Origin":["*"],"Access-Control-Allow-Credentials":["true"]}
                     [body] => {
   "args": {}, 
   "headers": {
     "Host": "httpbin.org", 
     "User-Agent": "GuzzleHttp/7", 
-    "X-Amzn-Trace-Id": "Root=1-67854852-2b0134c703fc43875b90a155"
+    "X-Amzn-Trace-Id": "Root=1-67856380-2722bf0639f803eb79d6fd4b"
   }, 
   "origin": "IP REMOVED", 
   "url": "http://httpbin.org/get"
@@ -129,6 +129,51 @@ Array
                     [reasonPhrase] => OK
                 )
 
+        )
+
+)
+```
+
+To print just the last transaction, use the `getLastTransaction` method:
+
+```php
+print_r($client->getLastTransaction());
+```
+
+This should print the last transaction.
+
+**Note**: The elements are named 'request' and 'response' instead of '0', '1', etc.
+
+```
+Array
+(
+    [request] => Array
+        (
+            [method] => GET
+            [url] => http://httpbin.org/get
+            [headers] => {"Host":["httpbin.org"],"User-Agent":["GuzzleHttp\/7"]}
+            [body] => 
+            [protocol] => 1.1
+            [target] => /get
+        )
+
+    [response] => Array
+        (
+            [statusCode] => 200
+            [headers] => {"Date":["Mon, 13 Jan 2025 19:03:30 GMT"],"Content-Type":["application\/json"],"Content-Length":["233"],"Connection":["keep-alive"],"Server":["gunicorn\/19.9.0"],"Access-Control-Allow-Origin":["*"],"Access-Control-Allow-Credentials":["true"]}
+            [body] => {
+  "args": {}, 
+  "headers": {
+    "Host": "httpbin.org", 
+    "User-Agent": "GuzzleHttp/7", 
+    "X-Amzn-Trace-Id": "Root=1-67856380-2722bf0639f803eb79d6fd4b"
+  }, 
+  "origin": "IP REMOVED", 
+  "url": "http://httpbin.org/get"
+}
+
+            [contentLength] => 233
+            [reasonPhrase] => OK
         )
 
 )
@@ -208,7 +253,7 @@ This should print the following:
 ```
 Array
 (
-    [http://httpbin.org/redirect/2] => * Found bundle for host: 0x234d7293f60 [serially]
+    [http://httpbin.org/redirect/2] => * Found bundle for host: 0x1ef4ffa2960 [serially]
 * Re-using existing connection with host httpbin.org
 > GET /get HTTP/1.1
 Host: httpbin.org
@@ -216,7 +261,7 @@ User-Agent: GuzzleHttp/7
 
 * Request completely sent off
 < HTTP/1.1 200 OK
-< Date: Mon, 13 Jan 2025 16:39:27 GMT
+< Date: Mon, 13 Jan 2025 19:03:30 GMT
 < Content-Type: application/json
 < Content-Length: 233
 < Connection: keep-alive
@@ -226,7 +271,7 @@ User-Agent: GuzzleHttp/7
 < 
 * Connection #0 to host httpbin.org left intact
 nection #0 to host httpbin.org left intact
-Credentials: true
+edentials: true
 < 
 * Connection #0 to host httpbin.org left intact
 
@@ -258,9 +303,18 @@ $options = [];
 $rotateUserAgent = false;
 
 // Make a request to local dev server
-$response = GuzzleMiddleware\makeMiddlewareRequest('GET', 'http://httpbin.org/redirect/2', $config, $options, $logger, $rotateUserAgent);
-print_r($response);
+$result = GuzzleMiddleware\makeMiddlewareRequest('GET', 'http://httpbin.org/redirect/2', $config, $options, $logger, $rotateUserAgent);
+print_r($result);
 ```
+
+## Documentation
+
+Detailed documentation can be found in the `docs` folder:
+
+- [Example Outputs](docs/example-outputs.md) - Shows sample outputs from key methods like getAllTransactions(), getLastTransaction(), getTransactionSummary(), and getDebug() when handling redirect chains
+- [Middleware Client Algorithm](docs/middleware-client-algorithm.md) - Explains the algorithm used to handle redirects and other middleware
+- [Middleware Client Flow](docs/middleware-client-flow.mmd) - A sequence diagram showing the flow of the MiddlewareClient
+- [Middleware Client Structure](docs/middleware-client-structure.md) - A diagram showing the structure of the MiddlewareClient
 
 ## Configuration Options
 

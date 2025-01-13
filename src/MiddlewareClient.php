@@ -425,27 +425,25 @@ class MiddlewareClient
             // JSON encode headers for standardization
             // JSON encode response headers
             // Capture any debug information if available
-            $output[] = [
-                'request' => [
-                    'method'   => $request->getMethod(),
-                    'url'      => (string) $request->getUri(),
-                    'headers'  => json_encode($request->getHeaders()),
-                    'body'     => (string) $request->getBody(),
-                    'protocol' => $request->getProtocolVersion(),
-                    'target'   => $request->getRequestTarget(),
-                ],
-                'response' => [
-                    'statusCode'    => $response->getStatusCode(),
-                    'headers'       => json_encode($response->getHeaders()),
-                    'body'          => (string) $response->getBody(),
-                    'contentLength' => $this->getContentLength($response),
-                    'reasonPhrase'  => $response->getReasonPhrase(),
-                ],
+            $output['request'] = [
+                'method'   => $request->getMethod(),
+                'url'      => (string) $request->getUri(),
+                'headers'  => json_encode($request->getHeaders()),
+                'body'     => (string) $request->getBody(),
+                'protocol' => $request->getProtocolVersion(),
+                'target'   => $request->getRequestTarget(),
+            ];
+            $output['response'] = [
+                'statusCode'    => $response->getStatusCode(),
+                'headers'       => json_encode($response->getHeaders()),
+                'body'          => (string) $response->getBody(),
+                'contentLength' => $this->getContentLength($response),
+                'reasonPhrase'  => $response->getReasonPhrase(),
             ];
 
             $this->logger->info('Output retrieved', [
                 'transactionCount' => count($this->container),
-                'latestStatusCode' => $output[0]['response']['statusCode'],
+                'latestStatusCode' => $output['response']['statusCode'],
             ]);
         } else {
             $this->logger->info('No output available');

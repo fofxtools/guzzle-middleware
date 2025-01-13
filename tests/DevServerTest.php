@@ -366,7 +366,7 @@ class DevServerTest extends TestCase
         $transaction = $this->client->getLastTransaction();
 
         // Verify response structure
-        $responseData = json_decode($transaction[0]['response']['body'], true);
+        $responseData = json_decode($transaction['response']['body'], true);
         $this->assertIsArray($responseData);
         $this->assertArrayHasKey('status', $responseData);
         $this->assertArrayHasKey('client_ip', $responseData);
@@ -392,12 +392,12 @@ class DevServerTest extends TestCase
         $transaction = $this->client->getLastTransaction();
 
         // Verify response code and content type
-        $this->assertEquals(200, $transaction[0]['response']['statusCode']);
-        $headers = json_decode($transaction[0]['response']['headers'], true);
+        $this->assertEquals(200, $transaction['response']['statusCode']);
+        $headers = json_decode($transaction['response']['headers'], true);
         $this->assertStringContainsString('application/json', $headers['Content-Type'][0]);
 
         // Verify response data
-        $responseData = json_decode($transaction[0]['response']['body'], true);
+        $responseData = json_decode($transaction['response']['body'], true);
         $this->assertEquals('ok', $responseData['status']);
         $this->assertEquals('::1', $responseData['client_ip']); // localhost IPv6
         $this->assertEquals('8000', $responseData['server']['server_port']);

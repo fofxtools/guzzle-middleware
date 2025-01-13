@@ -27,4 +27,9 @@ $proxyConfig = [
 $client = new MiddlewareClient(proxyConfig: $proxyConfig, logger: $logger);
 
 $response = $client->makeRequest('GET', 'http://localhost:8000/api/proxy-check');
+
+// Print the transactions, last transaction, transaction summary, and debug info
 print_r($client->getAllTransactions());
+print_r($client->getLastTransaction());
+print_r($client->getTransactionSummary());
+print_r($client->getDebug());

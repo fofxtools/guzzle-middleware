@@ -33,7 +33,7 @@ Array
             [response] => Array
                 (
                     [statusCode] => 302
-                    [headers] => {"Host":["localhost:8000"],"Date":["Mon, 13 Jan 2025 16:19:05 GMT"],"Connection":["close"],"X-Powered-By":["PHP\/8.3.10"],"Location":["\/redirect\/2"],"Content-type":["text\/html; charset=UTF-8"]}
+                    [headers] => {"Host":["localhost:8000"],"Date":["Mon, 13 Jan 2025 18:55:51 GMT"],"Connection":["close"],"X-Powered-By":["PHP\/8.3.10"],"Location":["\/redirect\/2"],"Content-type":["text\/html; charset=UTF-8"]}
                     [body] => 
                     [contentLength] => 0
                     [reasonPhrase] => Found
@@ -56,7 +56,7 @@ Array
             [response] => Array
                 (
                     [statusCode] => 302
-                    [headers] => {"Host":["localhost:8000"],"Date":["Mon, 13 Jan 2025 16:19:05 GMT"],"Connection":["close"],"X-Powered-By":["PHP\/8.3.10"],"Location":["\/redirect\/1"],"Content-type":["text\/html; charset=UTF-8"]}
+                    [headers] => {"Host":["localhost:8000"],"Date":["Mon, 13 Jan 2025 18:55:51 GMT"],"Connection":["close"],"X-Powered-By":["PHP\/8.3.10"],"Location":["\/redirect\/1"],"Content-type":["text\/html; charset=UTF-8"]}
                     [body] => 
                     [contentLength] => 0
                     [reasonPhrase] => Found
@@ -79,7 +79,7 @@ Array
             [response] => Array
                 (
                     [statusCode] => 200
-                    [headers] => {"Host":["localhost:8000"],"Date":["Mon, 13 Jan 2025 16:19:05 GMT"],"Connection":["close"],"X-Powered-By":["PHP\/8.3.10"],"Content-Type":["application\/json"],"Content-Length":["52"]}
+                    [headers] => {"Host":["localhost:8000"],"Date":["Mon, 13 Jan 2025 18:55:51 GMT"],"Connection":["close"],"X-Powered-By":["PHP\/8.3.10"],"Content-Type":["application\/json"],"Content-Length":["52"]}
                     [body] => {"status":"ok","message":"Redirect chain completed"}
                     [contentLength] => 52
                     [reasonPhrase] => OK
@@ -91,31 +91,29 @@ Array
 ```
 
 ## getLastTransaction()
-Returns only the final successful request/response:
+Returns only the final successful request/response.
+
+Note that elements are named 'request' and 'response' instead of '0', '1', etc.:
 ```php
 Array
 (
-    [0] => Array
+    [request] => Array
         (
-            [request] => Array
-                (
-                    [method] => GET
-                    [url] => http://localhost:8000/redirect/1
-                    [headers] => {"Host":["localhost:8000"],"User-Agent":["GuzzleHttp\/7"]}
-                    [body] => 
-                    [protocol] => 1.1
-                    [target] => /redirect/1
-                )
+            [method] => GET
+            [url] => http://localhost:8000/redirect/1
+            [headers] => {"Host":["localhost:8000"],"User-Agent":["GuzzleHttp\/7"]}
+            [body] => 
+            [protocol] => 1.1
+            [target] => /redirect/1
+        )
 
-            [response] => Array
-                (
-                    [statusCode] => 200
-                    [headers] => {"Host":["localhost:8000"],"Date":["Mon, 13 Jan 2025 16:19:05 GMT"],"Connection":["close"],"X-Powered-By":["PHP\/8.3.10"],"Content-Type":["application\/json"],"Content-Length":["52"]}
-                    [body] => {"status":"ok","message":"Redirect chain completed"}
-                    [contentLength] => 52
-                    [reasonPhrase] => OK
-                )
-
+    [response] => Array
+        (
+            [statusCode] => 200
+            [headers] => {"Host":["localhost:8000"],"Date":["Mon, 13 Jan 2025 18:55:51 GMT"],"Connection":["close"],"X-Powered-By":["PHP\/8.3.10"],"Content-Type":["application\/json"],"Content-Length":["52"]}
+            [body] => {"status":"ok","message":"Redirect chain completed"}
+            [contentLength] => 52
+            [reasonPhrase] => OK
         )
 
 )
@@ -193,7 +191,7 @@ User-Agent: GuzzleHttp/7
 * Request completely sent off
 < HTTP/1.1 200 OK
 < Host: localhost:8000
-< Date: Mon, 13 Jan 2025 16:19:05 GMT
+< Date: Mon, 13 Jan 2025 18:55:51 GMT
 < Connection: close
 < X-Powered-By: PHP/8.3.10
 < Content-Type: application/json

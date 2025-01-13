@@ -426,16 +426,16 @@ class MiddlewareClientTest extends TestCase
         $output = $client->getLastTransaction();
 
         $this->assertIsArray($output);
-        $this->assertCount(1, $output); // Ensure only 1 transaction is returned
-        $this->assertEquals(200, $output[0]['response']['statusCode']);
-        $this->assertEquals('{"key":"value"}', $output[0]['response']['body']);
-        $this->assertEquals('OK', $output[0]['response']['reasonPhrase']);
-        $this->assertEquals('1.1', $output[0]['request']['protocol']);
-        $this->assertEquals('/', $output[0]['request']['target']);
+        $this->assertCount(2, $output); // Ensure 2 elements: request and response
+        $this->assertEquals(200, $output['response']['statusCode']);
+        $this->assertEquals('{"key":"value"}', $output['response']['body']);
+        $this->assertEquals('OK', $output['response']['reasonPhrase']);
+        $this->assertEquals('1.1', $output['request']['protocol']);
+        $this->assertEquals('/', $output['request']['target']);
 
         // Check if the headers are valid JSON and contain the expected 'Content-Type'
-        $this->assertJson($output[0]['response']['headers']);
-        $headers = json_decode($output[0]['response']['headers'], true);
+        $this->assertJson($output['response']['headers']);
+        $headers = json_decode($output['response']['headers'], true);
         $this->assertArrayHasKey('Content-Type', $headers);
         $this->assertEquals('application/json', $headers['Content-Type'][0]);
     }

@@ -20,5 +20,8 @@ $client = new MiddlewareClient([], $logger);
 $request  = $client->createRequest('GET', 'http://localhost:8000/api/test');
 $response = $client->send($request);
 
-// Print the container
-print_r($client->getContainer());
+// Print the transactions, last transaction, transaction summary, and debug info
+print_r($client->getAllTransactions());
+print_r($client->getLastTransaction());
+print_r($client->getTransactionSummary());
+print_r($client->getDebug());

@@ -22,5 +22,5 @@ $options         = [];
 $rotateUserAgent = false;
 
 // Make a request to local dev server
-$response = GuzzleMiddleware\makeMiddlewareRequest('GET', 'http://httpbin.org/redirect/2', $config, $options, $logger, $rotateUserAgent);
-print_r($response);
+$result = GuzzleMiddleware\makeMiddlewareRequest('GET', 'http://httpbin.org/redirect/2', $config, $options, $logger, $rotateUserAgent);
+print_r($result);
