@@ -314,7 +314,7 @@ Detailed documentation can be found in the `docs` folder:
 - [Example Outputs](docs/example-outputs.md) - Shows sample outputs from key methods like getAllTransactions(), getLastTransaction(), getTransactionSummary(), and getDebug() when handling redirect chains
 - [Middleware Algorithm](docs/middleware-algorithm.md) - Explains the algorithm used to handle redirects and other middleware
 - [Middleware Flow](docs/middleware-flow.mmd) - A sequence diagram showing the flow of the MiddlewareClient
-- [Middleware Structure](docs/middleware-structure.md) - A diagram showing the structure of the MiddlewareClient
+- [Middleware Structure](docs/middleware-structure.mmd) - A Mermaid markdown diagram showing the structure of the MiddlewareClient
 
 ## Configuration Options
 
