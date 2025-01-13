@@ -262,6 +262,14 @@ $response = GuzzleMiddleware\makeMiddlewareRequest('GET', 'http://httpbin.org/re
 print_r($response);
 ```
 
+## Configuration Options
+
+The `MiddlewareClient` constructor accepts the following parameters:
+
+- `$config` (array): Guzzle configuration options
+- `$logger` (LoggerInterface): A PSR-3 compatible logger
+- `$proxyConfig` (array): Proxy configuration options
+
 ### Proxy Configuration
 
 To use a proxy with the MiddlewareClient:
@@ -271,15 +279,7 @@ $proxyConfig = ['proxy' => 'http://proxy.example.com:8000'];
 $client = new MiddlewareClient(proxyConfig: $proxyConfig);
 ```
 
-## Configuration Options
-
-The `MiddlewareClient` constructor accepts the following parameters:
-
-- `$config` (array): Guzzle configuration options
-- `$logger` (LoggerInterface): A PSR-3 compatible logger
-- `$proxyConfig` (array): Proxy configuration options
-
-### Development Server
+## Development Server
 
 The package includes a development server for testing and development. Start it before running tests:
 
@@ -296,7 +296,7 @@ The dev server provides endpoints for testing:
 
 Note: The dev server must be running for unit tests to pass.
 
-## Testing
+## Testing and Development
 
 Remember to start the development server before running tests.
 
@@ -304,6 +304,18 @@ To run the PHPUnit test suite through composer:
 
 ```bash
 composer test
+```
+
+To use PHPStan for static analysis:
+
+```bash
+composer phpstan
+```
+
+To use PHP-CS-Fixer for code style:
+
+```bash
+composer cs-fix
 ```
 
 ## License
