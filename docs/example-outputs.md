@@ -3,17 +3,20 @@
 This document shows example outputs from the MiddlewareClient's main methods when handling a redirect chain.
 
 ## Starting the Development Server
+
 To run these examples against the local development server:
 ```bash
 php -S localhost:8000 public/dev-server.php
 ```
 
 ## Test Case
+
 ```php
 $response = $client->makeRequest('GET', 'http://localhost:8000/redirect/3');
 ```
 
 ## getAllTransactions()
+
 Shows all requests/responses in the chain:
 ```php
 Array
@@ -91,9 +94,11 @@ Array
 ```
 
 ## getLastTransaction()
+
 Returns only the final successful request/response.
 
-Note that elements are named 'request' and 'response' instead of '0', '1', etc.:
+**Note**: The elements are named 'request' and 'response' instead of '0', '1', etc.
+
 ```php
 Array
 (
@@ -120,6 +125,7 @@ Array
 ```
 
 ## getTransactionSummary()
+
 Provides a condensed view of the entire chain:
 ```php
 Array
@@ -177,6 +183,7 @@ Array
 ```
 
 ## getDebug()
+
 Returns Guzzle's debug output for the connection:
 ```php
 Array

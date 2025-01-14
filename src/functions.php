@@ -139,7 +139,7 @@ function printOutput(
         $divider = str_repeat('-', 50);
     }
 
-    $outputString      = '';
+    $outputString      = PHP_EOL;
     $totalTransactions = count($output);
     // Track the current transaction index
     $currentIndex = 0;
@@ -249,8 +249,9 @@ function printOutput(
 
     if ($logger === null) {
         // If no logger is provided, fall back to echo
-        echo trim($outputString);
+        echo $outputString;
     } else {
+        // Trim the output for logging
         $logger->info('Request/Response Details:', [
             'output' => trim($outputString),
         ]);

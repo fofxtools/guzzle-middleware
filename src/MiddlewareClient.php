@@ -40,27 +40,30 @@ use FOfX\Helper;
  * Class MiddlewareClient
  *
  * Extends GuzzleHttp\Client to add middleware for logging request/response transactions.
- * It captures transaction history for each request, supporting debugging and error handling.
+ * Captures detailed transaction history and provides methods to inspect the request chain.
  *
  * Basic usage example:
  * ```php
  * use FOfX\GuzzleMiddleware\MiddlewareClient;
- * use Psr\Log\LoggerInterface;
  *
  * // Create a new MiddlewareClient instance
  * $client = new MiddlewareClient();  // Uses default PSR-3 NullLogger
  * // Or with custom logger:
- * $customLogger = YourPsrLogger::create(); // Any PSR-3 compatible logger
- * $client = new MiddlewareClient([], $customLogger);
+ * //$customLogger = YourPsrLogger::create(); // Any PSR-3 compatible logger
+ * //$client = new MiddlewareClient([], $customLogger);
  *
  * // Make a request
- * $response = $client->makeRequest('GET', 'https://api.example.com/data');
+ * $response = $client->makeRequest('GET', 'http://localhost:8000/redirect/3');
  *
- * // Get the output (including request and response details)
- * $output = $client->getOutput();
+ * // Get transaction details:
+ * print_r($client->getLastTransaction());      // Most recent request/response
+ * print_r($client->getAllTransactions());      // Full request chain
+ * print_r($client->getTransactionSummary());   // Condensed metrics
+ * print_r($client->getDebug());                // Guzzle debug output
  *
- * // Use the printOutput function to display the results
- * printOutput($output);
+ * // Print transaction details:
+ * $client->printLastTransaction();     // Print formatted last transaction
+ * $client->printAllTransactions();     // Print all transactions
  * ```
  */
 class MiddlewareClient
@@ -494,7 +497,7 @@ class MiddlewareClient
     }
 
     /**
-     * Wrapper function to call getOutput() and print the output in a human-readable format.
+     * Wrapper function to call getLastTransaction() and print the transaction in a human-readable format.
      *
      * @param bool        $truncate  Whether to truncate long outputs (default: true)
      * @param int         $maxLength Maximum length of truncation (default: 1000)
@@ -509,8 +512,14 @@ class MiddlewareClient
         string $divider = null,
         bool $useLogger = true
     ): void {
-        // Retrieve the output using getOutput()
-        $output = $this->getLastTransaction();
+        // Retrieve the output using getLastTransaction()
+        // Wrap in array to match printOutput() expected format
+        $output = [$this->getLastTransaction()];
+
+        // If $this->logger is a NullLogger, set $useLogger to false
+        if ($this->logger instanceof NullLogger) {
+            $useLogger = false;
+        }
 
         // Call the standalone printOutput() function
         printOutput($output, $truncate, $maxLength, $escape, $divider, $useLogger ? $this->logger : null);
@@ -532,7 +541,15 @@ class MiddlewareClient
         string $divider = null,
         bool $useLogger = true
     ): void {
+        // Retrieve the output using getAllTransactions()
         $output = $this->getAllTransactions();
+
+        // If $this->logger is a NullLogger, set $useLogger to false
+        if ($this->logger instanceof NullLogger) {
+            $useLogger = false;
+        }
+
+        // Call the standalone printOutput() function
         printOutput($output, $truncate, $maxLength, $escape, $divider, $useLogger ? $this->logger : null);
     }
 
