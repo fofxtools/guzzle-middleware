@@ -278,6 +278,18 @@ edentials: true
 )
 ```
 
+### POST Example
+
+To get the last transaction for a POST request, use the `makeRequest` method with the `POST` method:
+
+```php
+$client = new MiddlewareClient();
+$response = $client->makeRequest('POST', 'http://localhost:8000/api/post', [
+    'form_params' => ['username' => 'testuser', 'password' => 'secret123']
+]);
+print_r($client->getLastTransaction());
+```
+
 ### Using the `makeMiddlewareRequest` Function
 
 Alternatively, you can use the `makeMiddlewareRequest` function for an alternative approach. See [examples/makeMiddlewareRequest.php](examples/makeMiddlewareRequest.php).
