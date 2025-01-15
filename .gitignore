@@ -8,10 +8,14 @@ error_log
 
 # Environment and Configuration Files
 .env
-.env.backup
-.env.production
-/config.php
-/config/config.php
+.env.*
+!.env.example
+!.env.sample
+!.env.template
+config.php
+config.*.php
+*.config.php
+*.config.*.php
 
 # Local and Temporary Files
 /local/
@@ -53,6 +57,10 @@ Homestead.yaml
 auth.json
 
 # Custom Output Files
-/repopack-output.txt
+/*repopack-output.txt
 /phpunit.txt
 /phpstan.txt
+
+# Storage Files
+/storage/*.log
+/storage/*.sql
