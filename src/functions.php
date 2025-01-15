@@ -27,6 +27,7 @@ declare(strict_types=1);
 namespace FOfX\GuzzleMiddleware;
 
 use Psr\Log\LoggerInterface;
+use Psr\Log\NullLogger;
 use FOfX\Helper;
 
 /**
@@ -144,6 +145,12 @@ function printOutput(
     // Track the current transaction index
     $currentIndex = 0;
 
+    // If the $output array has string keys, it should be a single request/response transaction
+    // rather than an array of transactions. So wrap in an array.
+    if (Helper\has_string_keys($output)) {
+        $output = [$output];
+    }
+
     foreach ($output as $transaction) {
         // Increment the index for each transaction
         $currentIndex++;
@@ -247,8 +254,8 @@ function printOutput(
         $outputString = htmlspecialchars($outputString);
     }
 
-    if ($logger === null) {
-        // If no logger is provided, fall back to echo
+    // If no logger is provided, or if the logger is a NullLogger, fall back to echo
+    if ($logger === null || $logger instanceof NullLogger) {
         echo $outputString;
     } else {
         // Trim the output for logging

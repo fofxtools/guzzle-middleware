@@ -19,27 +19,24 @@ if (!is_dir($logsDir)) {
 }
 $logger->pushHandler(new StreamHandler($logsDir . '/guzzle-middleware.log', Level::Info));
 
-$escape    = false; // If false, printOutput will not escape HTML
-$useLogger = true;  // If true, use the logger instead of echo
-if (!$useLogger) {
-    $logger = null;
-}
+$url    = 'http://localhost:8000/redirect/3';
+$escape = false; // If false, printOutput will not escape HTML
 
 // Create a new MiddlewareClient instance with the logger
 $client = new MiddlewareClient([], $logger);
 
 // Make a request
-$response = $client->makeRequest('GET', 'https://www.example.com');
+$response = $client->makeRequest('GET', $url);
 
 // Print the transactions (including request and response details)
 // This will write to the log file instead of echoing
-$client->printAllTransactions(escape: $escape, useLogger: $useLogger);
+$client->printAllTransactions(escape: $escape);
 
 echo PHP_EOL . PHP_EOL;
 
 // Alternately, use the standalone functions makeMiddlewareRequest() and printOutput()
 // The makeMiddlewareRequest() function will add a user agent to the request
-$response = GuzzleMiddleware\makeMiddlewareRequest('GET', 'https://www.example.com', [], [], $logger);
+$response = GuzzleMiddleware\makeMiddlewareRequest('GET', $url, [], [], $logger);
 GuzzleMiddleware\printOutput(output: $response, escape: $escape, logger: $logger);
 
 // The log file will contain the request/response details

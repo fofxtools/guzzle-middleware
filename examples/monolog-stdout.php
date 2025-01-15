@@ -13,23 +13,20 @@ use Monolog\Level;
 $logger = new Logger('guzzle-middleware');
 $logger->pushHandler(new StreamHandler('php://stdout', Level::Info));
 
-$escape    = false; // If false, printOutput will not escape HTML
-$useLogger = true; // If false, MiddlewareClient\printOutput will use echo instead of a logger
-if (!$useLogger) {
-    $logger = null;
-}
+$url    = 'http://localhost:8000/redirect/3';
+$escape = false; // If false, printOutput will not escape HTML
 
 // Create a new MiddlewareClient instance
 $client = new MiddlewareClient([], $logger);
 
 // Make a request
-$response = $client->makeRequest('GET', 'https://www.example.com');
+$response = $client->makeRequest('GET', $url);
 
 // Print the transactions (including request and response details)
-$client->printAllTransactions(escape: $escape, useLogger: $useLogger);
+$client->printAllTransactions(escape: $escape);
 
 echo PHP_EOL . PHP_EOL;
 
 // Alternately, use the standalone functions makeMiddlewareRequest() and printOutput()
-$response = GuzzleMiddleware\makeMiddlewareRequest('GET', 'https://www.example.com', [], [], $logger);
+$response = GuzzleMiddleware\makeMiddlewareRequest('GET', $url, [], [], $logger);
 GuzzleMiddleware\printOutput(output: $response, escape: $escape, logger: $logger);

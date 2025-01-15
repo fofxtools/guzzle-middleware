@@ -513,8 +513,7 @@ class MiddlewareClient
         bool $useLogger = true
     ): void {
         // Retrieve the output using getLastTransaction()
-        // Wrap in array to match printOutput() expected format
-        $output = [$this->getLastTransaction()];
+        $output = $this->getLastTransaction();
 
         // If $this->logger is a NullLogger, set $useLogger to false
         if ($this->logger instanceof NullLogger) {
